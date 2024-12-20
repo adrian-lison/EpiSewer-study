@@ -1,0 +1,691 @@
+## Setup
+
+```{r setup, include = FALSE}
+knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
+```
+```{r}
+library(targets)
+library(dplyr)
+library(EpiSewer)
+library(ggplot2)
+source("code/pipeline/utils_pipeline.R")
+source("code/pipeline/utils_real_time.R")
+source("data/assumptions/epi_params_EpiSewer-study.R")
+source("code/local_config.R")
+```
+
+Create pipeline folders if they do not exist
+```{r}
+setup_pipeline("_overview_22-23")
+setup_pipeline("_overview_23-24")
+```
+
+## Run pipelines
+
+```{r, include = FALSE}
+run_pipeline(targets_proj_name = "_overview_22-23", submit = T)
+if(length(tar_read(jobs_EpiSewer_invalid))>0) {
+  warning("There are invalid jobs.")
+}
+```
+
+```{r, include = FALSE}
+run_pipeline(targets_proj_name = "_overview_23-24", submit = T)
+if(length(tar_read(jobs_EpiSewer_invalid))>0) {
+  warning("There are invalid jobs.")
+}
+```
+
+Check results
+```{r}
+rbindlist(lapply(c("_overview_22-23", "_overview_23-24"), function(pipeline) {
+  suppressMessages(setup_pipeline(pipeline))
+  return(tar_read(job_EpiSewer_submission) |>
+    mutate(total = 1, .before = exists) |>
+    summarise(across(total:submitted, sum, na.rm = T)) |> 
+    mutate(pipeline = pipeline, .before = total)
+    )
+}))
+```
+
+## Load results
+
+```{r}
+all_pipelines <- c("_overview_22-23", "_overview_23-24")
+job_EpiSewer_result <- load_EpiSewer_results(all_pipelines)
+data_PCR_agg_select <- get_data_PCR_agg_select(all_pipelines)
+data_flow_select <- get_data_flow_select(all_pipelines)
+```
+
+```{r}
+results_index <- bind_rows(lapply(job_EpiSewer_result, function(x) {
+  if (length(x) == 0) { data.frame(wwtp = NA, target = NA, estimation_date = NA)
+  } else {
+    return(data.frame(
+      wwtp = x$job$selection$wwtp,
+      target = x$job$selection$target,
+      estimation_date = lubridate::as_date(x$job$selection$date_select[[1]]["to"]),
+      season = ifelse(lubridate::as_date(x$job$selection$date_select[[1]]["to"])<"2023-08-01","2022/23","2023/24")
+  ))}
+  }))
+rownames(results_index) <- NULL
+results_index$i <- 1:nrow(results_index)
+
+get_result_label <- function(x) {
+  paste(
+    x$summary$R[type == "estimate", max(date)],
+    x$job$selection$wwtp,
+    x$job$selection$target
+    )
+}
+```
+
+### Determine wave dates
+In the following, we define the start and end of the respective seasonal waves of SARS-CoV-2, IAV, and RSV based on the estimated time series of infections.
+```{r}
+count_detect_runs <- function(detect){
+    sapply(1:length(detect), function(i) {
+      if (all(detect[i:length(detect)])) {
+        return(length(detect) - i + 1)
+      } else {
+        return(which.min(detect[i:length(detect)])[1] - 1)
+      }
+    })
+  }
+```
+
+Start: First week in second half of year with a 10% weekly growth rate and less than 2 consecutive non-detects before the peak
+End: First week three months after peak with less than 10% weekly decline
+```{r}
+results_index$start_date <- as.Date(apply(results_index, 1, function(result_select) {
+  if (is.na(result_select["wwtp"])) return(NA)
+  peak <- job_EpiSewer_result[[as.numeric(result_select["i"])]]$summary$expected_infections[type == "estimate",][median == max(median, na.rm = T)]
+  stopifnot(nrow(peak)>0)
+  lcc <- job_EpiSewer_result[[as.numeric(result_select["i"])]]$job$metainfo$load_curve_crude
+  lcc[!is.na(detect), nondetect_next_n := count_detect_runs(!detect)]
+  if (nrow(lcc[date <= peak$date & nondetect_next_n >= 2,])>0) {
+      last_triple_nondetect <- lcc[date <= peak$date & nondetect_next_n >= 2, max(date)]
+      min_date_detects <- lcc[date >= last_triple_nondetect & detect, min(date)]
+  } else {
+      min_date_detects <- as.Date("1999-01-01")
+  }
+job_EpiSewer_result[[as.numeric(result_select["i"])]]$summary$infections |> mutate(isoyear = lubridate::isoyear(date), isoweek = lubridate::isoweek(date)) |> group_by(isoyear, isoweek) |> summarize(date = min(date), weekly_incidence = 7*mean(mean), .groups = "drop") |> 
+    filter(date >= paste0(lubridate::year(min(date, na.rm = T)), "-09-01"), date >= min_date_detects) |> 
+    filter(weekly_incidence/lag(weekly_incidence) > 1.1) |> slice_head() |> pull(date) |> as.character()
+}))
+
+results_index$end_date <- as.Date(apply(results_index, 1, function(result_select) {
+  if (is.na(result_select["wwtp"])) return(NA)
+peak <- job_EpiSewer_result[[as.numeric(result_select["i"])]]$summary$expected_infections[type == "estimate",][median == max(median),]
+job_EpiSewer_result[[as.numeric(result_select["i"])]]$summary$expected_infections |> 
+  mutate(isoyear = lubridate::isoyear(date), isoweek = lubridate::isoweek(date)) |> 
+  group_by(isoyear, isoweek) |> 
+  summarize(date = min(date), incidence_week_avg = mean(mean), .groups = "drop") |> 
+  mutate(weekly_growth = incidence_week_avg/lag(incidence_week_avg)) |> 
+  filter(date > peak$date + 3*4*7, weekly_growth > 0.9) |> slice_head() |> pull(date) |> as.character()}))
+
+results_index <- results_index |> mutate(
+  starte_date_data = start_date - 4*7,
+  end_date_model = end_date + 8*7
+)
+```
+
+Correct SARS-CoV-2 end dates of wave for season 2022/23 (spring wave)
+```{r}
+setDT(results_index)
+results_index[season == "2022/23" & wwtp == "ARA Werdhoelzli" & target == "SARS-N2", end_date_model := as.Date("2023-06-01")]
+results_index[season == "2022/23" & wwtp == "ARA Werdhoelzli" & target == "SARS-N2", end_date := end_date_model - 8*7]
+
+results_index[season == "2022/23" & wwtp == "CDA Lugano" & target == "SARS-N2", end_date_model := as.Date("2023-06-01")]
+results_index[season == "2022/23" & wwtp == "CDA Lugano" & target == "SARS-N2", end_date := end_date_model - 8*7]
+
+results_index[season == "2022/23" & wwtp == "ARA Chur" & target == "SARS-N2", end_date_model := as.Date("2023-06-01")]
+results_index[season == "2022/23" & wwtp == "ARA Chur" & target == "SARS-N2", end_date := end_date_model - 8*7]
+
+results_index[season == "2022/23" & wwtp %in% c("ARA Werdhoelzli", "CDA Lugano", "ARA Chur") & target == "SARS-N2",]
+
+results_index <- as_tibble(results_index)
+```
+
+```{r}
+wwtps_select <- c("ARA Werdhoelzli", "CDA Lugano", "ARA Chur")
+
+results_index |> 
+  filter(wwtp %in% wwtps_select) |> 
+  mutate(
+    wwtp = factor(wwtp, levels = wwtps_select, ordered = T),
+    target = factor(target, levels = c("SARS-N2", "IAV-M", "RSV-N"), ordered = T)
+    ) |> 
+  arrange(season, target, wwtp)
+```
+
+Save wave dates
+```{r}
+results_index |> select(wwtp, target, season, start_date, starte_date_data, end_date, end_date_model) |> 
+  readr::write_csv(here::here("data", "assumptions", "wave_dates.csv"))
+```
+
+### Detected outliers
+```{r}
+detected_outliers <- apply(results_index, 1, function(x) {
+  res <- job_EpiSewer_result[[as.numeric(x["i"])]]$summary$outliers
+  if (is.null(res)) return(NULL)
+  outlier_df <- res[epsilon > 1, c("date", "epsilon")]
+  outlier_df[ , wwtp := x["wwtp"][1]]
+  outlier_df[ , target := x["target"][1]]
+  outlier_df[ , outlier_detected := TRUE]
+  data.table::setcolorder(outlier_df, c("wwtp", "target", "date", "outlier_detected", "epsilon"))
+  return(outlier_df)
+})
+```
+
+```{r}
+lapply(detected_outliers[c(21,34)], function(x) {
+  x |> mutate(q = sapply(epsilon, function(e) extraDistr::pgev(q = e, mu = 0, sigma = 2e-8, xi = 4)))
+})
+```
+
+### Analysis of concentrations
+
+Peak concentration
+```{r}
+results_index |> mutate(peak_concentration = apply(results_index, 1, function(x) {
+  outliers <- detected_outliers[[as.numeric(x["i"])]]
+  data_PCR_agg_select[[as.numeric(x["i"])]][!(date %in% outliers$date), max(gc_per_mlww)]
+})) |> filter(wwtp %in% wwtps_select)
+
+results_index |> mutate(peak_concentration = apply(results_index, 1, function(x) {
+  outliers <- detected_outliers[[as.numeric(x["i"])]]
+  data_PCR_agg_select[[as.numeric(x["i"])]][!(date %in% outliers$date), max(gc_per_mlww)]
+})) |> group_by(target, season) |> summarize(min_peak_concentration = min(peak_concentration), max_peak_concentration = max(peak_concentration))
+```
+
+Median concentration
+```{r}
+results_index |> mutate(peak_concentration = apply(results_index, 1, function(x) {
+  outliers <- detected_outliers[[as.numeric(x["i"])]]
+  data_PCR_agg_select[[as.numeric(x["i"])]][!(date %in% outliers$date), median(gc_per_mlww)]
+})) |> filter(wwtp %in% wwtps_select)
+```
+
+Percentage of non-detects
+```{r}
+results_index |> mutate(share_nondetect = apply(results_index, 1, function(x) {
+  cutoff <- ifelse(x["season"]=="2022/23", "2023-01-01", "2024-01-01")
+  data_PCR_agg_select[[as.numeric(x["i"])]][date < cutoff, sum(gc_per_mlww == 0)/.N]
+})) |> filter(wwtp %in% wwtps_select) |> View()
+```
+
+### Model fit
+
+Coverage of posterior predictive measurement distribution
+
+```{r}
+results_index |> mutate(coverage_q95 = apply(results_index, 1, function(x) {
+  preds <- merge(
+    data_PCR_agg_select[[as.numeric(x["i"])]][, c("date", "gc_per_mlww")],
+    job_EpiSewer_result[[as.numeric(x["i"])]]$summary$concentration,
+    by = "date"
+    )
+  return(preds[type == "estimate" & gc_per_mlww > 0, sum(gc_per_mlww >= lower_0.95 & gc_per_mlww <= upper_0.95)/sum(!is.na(gc_per_mlww))])
+})) |> group_by(season, target) |>
+   filter(coverage_q95 > 0) |> 
+   summarize(mean_coverage_q95 = mean(coverage_q95), min_coverage_q95 = min(coverage_q95), max_coverage_q95 = max(coverage_q95))
+
+results_index |> mutate(coverage_q5 = apply(results_index, 1, function(x) {
+  preds <- merge(
+    data_PCR_agg_select[[as.numeric(x["i"])]][, c("date", "gc_per_mlww")],
+    job_EpiSewer_result[[as.numeric(x["i"])]]$summary$concentration,
+    by = "date"
+    )
+  return(preds[type == "estimate" & gc_per_mlww > 0, sum(gc_per_mlww >= lower_0.5 & gc_per_mlww <= upper_0.5)/sum(!is.na(gc_per_mlww))])
+})) |> group_by(season, target) |> 
+  filter(coverage_q5 > 0) |> 
+  summarize(mean_coverage_q5 = mean(coverage_q5), min_coverage_q5 = min(coverage_q5), max_coverage_q5 = max(coverage_q5))
+```
+
+### Estimated peaks
+```{r}
+results_index |> mutate(
+  peak_median = apply(results_index, 1, function(x) {
+  res <- job_EpiSewer_result[[as.numeric(x["i"])]]$summary$R
+  if (is.null(res)) return(NA)
+  if (x[["season"]] == "2022/23") {
+    return(as.character(res[date >= "2022-10-15" & median <= 1, min(date)]))
+  } else {
+    return(as.character(res[date >= "2023-10-15" & median <= 1, min(date)]))
+  }
+})) |> filter(!(wwtp %in% c("STEP Vidy", "ARA Basel/Prorheno", "ARA Buholz") & target == "IAV-M")) |>
+  group_by(target, season) |> 
+  summarize(min_peak = min(peak_median, na.rm = T), max_peak = max(peak_median, na.rm = T))
+```
+
+### Maximum Rt
+```{r}
+results_index |> mutate(
+  R_max_median = apply(results_index, 1, function(x) {
+  res <- job_EpiSewer_result[[as.numeric(x["i"])]]$summary$R
+  if (is.null(res)) return(NA)
+  if (x[["season"]] == "2022/23") {
+    return(as.character(res[date >= "2022-09-01", max(median, na.rm = T)]))
+  } else {
+    return(as.character(res[date >= "2023-09-01", max(median, na.rm = T)]))
+  }
+})) |> filter(wwtp %in% wwtps_select) |> 
+  group_by(target, season) |> 
+  summarize(min_Rmax = as.numeric(min(R_max_median, na.rm = T)), max_Rmax = as.numeric(max(R_max_median, na.rm = T))) |> 
+  mutate(across(c(min_Rmax, max_Rmax), round, 2))
+```
+
+### Overview figure
+```{r}
+palette_targets <- c("#BC3C29FF","#0072B5FF","#E18727FF")
+```
+
+```{r}
+#library(extrafont)
+#font_import()
+#loadfonts(quiet = T)
+fontfam <- "sans"
+```
+
+Plotting function
+```{r fig.width = 10, fig.height = 12}
+get_wwtp_panels <- function(season_select, wwtps_select, use_growth_rate = FALSE, show_flow = TRUE) {
+  
+  if (season_select == "2022/23") {
+    date_lim <- as.Date(c("2022-11-15", "2023-04-15"))
+    target_R_lim <- list(
+    `SARS-N2` = c(0.7, 1.2),
+    `IAV-M` = c(0.6, 1.8),
+    `RSV-N` = c(0.6, 1.7)
+  )
+    target_r_lim <- list(
+    `SARS-N2` = c(-0.12, 0.12),
+    `IAV-M` = c(-0.2, 0.2),
+    `RSV-N` = c(-0.12, 0.12)
+  )
+  target_R_breaks <- list(
+    `SARS-N2` = c(0.8, 1, 1.2),
+    `IAV-M` = c(0.7, 1, 1.4),
+    `RSV-N` = c(1, 1.5)
+  )
+  } else if (season_select == "2023/24") {
+    date_lim <- as.Date(c("2023-08-30", "2024-04-15"))
+    target_R_lim <- list(
+    `SARS-N2` = c(0.7, 1.3),
+    `IAV-M` = c(0.6, 1.5),
+    `RSV-N` = c(0.6, 1.9)
+  )
+    target_r_lim <- list(
+    `SARS-N2` = c(-0.12, 0.12),
+    `IAV-M` = c(-0.15, 0.15),
+    `RSV-N` = c(-0.12, 0.12)
+  )
+  target_R_breaks <- list(
+    `SARS-N2` = c(0.8, 1, 1.2),
+    `IAV-M` = c(0.7, 1, 1.4),
+    `RSV-N` = c(1, 1.5)
+  )
+  }
+  
+  target_labels <- list(
+    `SARS-N2` = "SARS-CoV-2",
+    `IAV-M` = "IAV",
+    `RSV-N` = "RSV"
+  )
+  
+  style_x <- function(g) {
+      g + scale_x_date(date_breaks = "2 months", date_labels = "%m/%y", expand = c(0,0))
+  }
+    
+  remove_y <- function(g) {
+    g + theme(
+      axis.title.y = element_blank(),
+      axis.text.y = element_blank()
+    )
+  }
+  
+  return(suppressMessages(
+  lapply(1:length(wwtps_select), function(wwtp_select_i) {
+  wwtp_select <- wwtps_select[wwtp_select_i]
+  baseline_select_list <- lapply(c("SARS-N2", "IAV-M", "RSV-N"), function(target_select) {
+    results_index |> filter(wwtp == wwtp_select, target == target_select, season == season_select)
+  })
+  
+  flow_data <- data_flow_select[[baseline_select_list[[1]]$i]] |> 
+    filter(imputed==FALSE, date >= date_lim[1], date <= date_lim[2]) |> 
+    mutate(wwtp = factor(wwtp, levels = wwtps_select, labels = names(wwtps_select), ordered = T))
+  max_flow <- max(flow_data$flow, na.rm = T)
+  
+  flow_plot <- flow_data |> 
+    ggplot(aes(x=date, y = flow)) + 
+    geom_point(shape = 4, size = 0.8) +
+    geom_line(linetype = "dashed", linewidth = 0.2, color = "grey") +
+    geom_smooth(span = 4*7 / length(unique(flow_data$date)), se = FALSE, linetype = "solid", color = "#4d4d4d") +
+    scale_x_date(date_breaks = "2 months", date_labels = "%m/%y", expand = expansion(add=c(0,0))) +
+    scale_y_continuous(labels = function(x) paste0(round(x/max_flow*100), "%"), breaks = max_flow * seq(0,2,0.5)) +
+    xlab("Date") +
+    ylab(expression(flow[t]/flow[max])) +
+    theme_bw() +
+    theme(
+      axis.title.x = element_blank(),
+      axis.ticks = element_blank(),
+      panel.border = element_blank(),
+      text = element_text(family = fontfam),
+      axis.text.y = element_text(angle = 90, hjust = 0.5)
+      ) +
+    coord_cartesian(xlim = date_lim, ylim = c(0, max_flow*1.05))
+
+  if (wwtp_select_i > 1) {
+      flow_plot <- remove_y(flow_plot)
+    }
+  if (wwtp_select_i == length(wwtps_select)) {
+      flow_strip <- cowplot::plot_grid(
+        NULL,
+        cowplot::get_plot_component(
+          ggplot(data.frame(label="Flow volume")) + 
+        facet_grid(label ~ ., scales = "free_y") + 
+        theme(
+          strip.text.y = element_text(angle = -90),
+          strip.background = element_rect(fill = "#f2f2f2", color = "black")
+          ),
+          pattern = "strip-r-1"),
+        NULL, ncol = 1, rel_heights = c(0.025, 0.95, 0.12))
+      
+     flow_part <- cowplot::plot_grid(
+        flow_plot, flow_strip, nrow = 1, rel_widths = c(0.9, 0.1)
+        ) 
+  } else {
+    flow_part <- flow_plot
+  }
+
+  main_plots <- lapply(1:3, function(j) {
+    i_select <- baseline_select_list[[j]]$i
+    target_select <- baseline_select_list[[j]]$target
+    color_select <- palette_targets[j]
+    
+    max_concentration <- data_PCR_agg_select[[i_select]][is_outlier == FALSE, max(gc_per_mlww)]
+    
+    concentration_plot <- plot_concentration(
+      setNames(list(job_EpiSewer_result[[i_select]]), target_labels[[target_select]]),
+      measurements = data_PCR_agg_select[[i_select]],
+      concentration_col = "gc_per_mlww", intervals = c(0.5, 0.95),
+      forecast = FALSE, median = T, obs_size = 1, obs_shape = 16
+      ) +
+      theme(
+        strip.background = element_blank(),
+        axis.title.x = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.ticks = element_blank(),
+        panel.border = element_blank(),
+        text = element_text(family = fontfam),
+        axis.text.y = element_text(angle = 90, hjust = 0.5)
+        ) +
+      scale_y_continuous(
+        labels = function(x) paste0(round(x/max_concentration*100), "%"),
+        breaks = max_concentration * seq(0,2,0.5)
+        ) +
+      coord_cartesian(xlim = date_lim, ylim = c(0, max_concentration*1.2)) + 
+      ylab(expression(c[t]/c[max])) +
+      scale_color_manual(values = color_select) +
+      scale_fill_manual(values = color_select)
+    
+    if (use_growth_rate) {
+        transmission_plot <- plot_growth_rate(
+        setNames(list(job_EpiSewer_result[[i_select]]), target_select),
+        forecast = FALSE, median = T, intervals = c(0.5, 0.95), seeding = TRUE
+        ) +
+        coord_cartesian(xlim = date_lim, ylim = target_r_lim[[target_select]]) +
+        ylab("Growth rate") +
+        scale_y_continuous(breaks = c(-0.1, 0, 0.1))
+    } else {
+      transmission_plot <- plot_R(
+        setNames(list(job_EpiSewer_result[[i_select]]), target_select),
+        forecast = FALSE, median = T, intervals = c(0.5, 0.95), seeding = TRUE
+        ) +
+        scale_y_continuous(breaks = target_R_breaks[[target_select]]) +
+        coord_cartesian(xlim = date_lim, ylim = target_R_lim[[target_select]]) +
+        ylab(expression(R[t]))
+    }
+    
+    transmission_plot <- transmission_plot +
+      theme(
+        axis.title.x = element_blank(),
+        axis.ticks = element_blank(),
+        panel.border = element_blank(),
+        text = element_text(family = fontfam),
+        axis.text.y = element_text(angle = 90, hjust = 0.5)
+        ) +
+      scale_color_manual(values = color_select) +
+      scale_fill_manual(values = color_select)
+    
+    concentration_plot <- style_x(concentration_plot)
+    transmission_plot <- style_x(transmission_plot)
+    
+    if (wwtp_select_i > 1) {
+      concentration_plot <- remove_y(concentration_plot)
+      transmission_plot <- remove_y(transmission_plot)
+    }
+    
+    mainplot <- cowplot::plot_grid(
+        concentration_plot,
+        NULL,
+        transmission_plot + theme(legend.position = "none"),
+        ncol = 1, align = "v", rel_heights = c(0.5, -0.02, 0.5)
+        )
+    
+    if (wwtp_select_i == length(wwtps_select)) {
+      target_strip <- cowplot::plot_grid(
+        NULL,
+        cowplot::get_plot_component(
+          concentration_plot + 
+        facet_grid(model ~ ., scales = "free_y") + 
+        theme(
+          strip.text.y = element_text(angle = -90),
+          strip.background = element_rect(fill = NA, color = "black")
+          ),
+          pattern = "strip-r-1"),
+        NULL, ncol = 1, rel_heights = c(0.025, 0.95, 0.09))
+      
+     mainplot <- cowplot::plot_grid(
+        mainplot, target_strip, nrow = 1, rel_widths = c(0.9, 0.1)
+        ) 
+    }
+    return(mainplot)
+  })
+  
+if (wwtp_select_i == 1) {
+  gridlabels <- c("A", "B", "C", "D")
+} else {
+  gridlabels <- NULL
+}
+
+if (!show_flow) {
+  main_part <- cowplot::plot_grid(
+  plotlist = main_plots, ncol = 1,
+  labels = gridlabels[1:3]
+  )
+} else {
+  main_part <- cowplot::plot_grid(
+  plotlist = c(main_plots, list(flow_part)), ncol = 1, rel_heights = c(rep(0.27, 3), 0.19),
+  labels = gridlabels
+  )
+}
+
+if (wwtp_select_i == 1) {
+  wwtp_strip_widths <- c(0.15, 0.82, 0.03) # first
+} else if (wwtp_select_i == 3) {
+  wwtp_strip_widths <- c(0.03, 0.85, 0.12) # last
+} else {
+  wwtp_strip_widths <- c(0.03, 0.94, 0.03)
+}
+
+wwtp_strip <- cowplot::plot_grid(
+  NULL,
+  cowplot::get_plot_component(
+    flow_plot + 
+      facet_grid(. ~ wwtp, scales = "free_x") + 
+      theme(strip.background = element_rect(fill = NA, color = "black")),
+    pattern = "strip-t-1"),
+  NULL, nrow = 1, rel_widths = wwtp_strip_widths)
+
+wwtp_panel <- cowplot::plot_grid(
+  wwtp_strip, main_part, ncol = 1, rel_heights = c(0.03, 0.97), align = "v"
+)
+
+return(wwtp_panel)
+})
+))
+}
+```
+
+#### Main figures
+```{r, fig.width = 10, fig.height = 12}
+wwtp_season_list <- list(
+  list(
+    season_select = "2022/23",
+    wwtps_select = c(
+      "Zurich" = "ARA Werdhoelzli",
+      "Lugano" = "CDA Lugano",
+      "Chur" = "ARA Chur"
+      ),
+    use_growth_rate = FALSE,
+    show_flow = TRUE
+  ),
+  list(
+    season_select = "2023/24",
+    wwtps_select = c(
+      "Zurich" = "ARA Werdhoelzli",
+      "Lugano" = "CDA Lugano",
+      "Chur" = "ARA Chur"
+      ),
+    use_growth_rate = FALSE,
+    show_flow = TRUE
+  ),
+  # with growth rates
+  list(
+    season_select = "2022/23",
+    wwtps_select = c(
+      "Zurich" = "ARA Werdhoelzli",
+      "Lugano" = "CDA Lugano",
+      "Chur" = "ARA Chur"
+      ),
+    use_growth_rate = TRUE,
+    show_flow = FALSE
+  ),
+  list(
+    season_select = "2023/24",
+    wwtps_select = c(
+      "Zurich" = "ARA Werdhoelzli",
+      "Lugano" = "CDA Lugano",
+      "Chur" = "ARA Chur"
+      ),
+    use_growth_rate = TRUE,
+    show_flow = FALSE
+  )
+)
+
+for (i in 1:length(wwtp_season_list)) {
+  wwtp_panels <- get_wwtp_panels(
+    season_select = wwtp_season_list[[i]]$season_select,
+    wwtps_select = wwtp_season_list[[i]]$wwtps_select,
+    use_growth_rate = wwtp_season_list[[i]]$use_growth_rate,
+    show_flow = wwtp_season_list[[i]]$show_flow
+    )
+  overview_plot <- cowplot::plot_grid(plotlist = wwtp_panels, nrow = 1, rel_widths = c(0.357, 0.318, 0.338))
+  
+  if (wwtp_season_list[[i]]$use_growth_rate) {
+    plotname <- paste0("main_overview_growth_rate_",stringr::str_replace(wwtp_season_list[[i]]$season_select,"/","-"),".pdf")
+    ggsave(plot = overview_plot, here::here("figures", "real_time", plotname), width = 10, height = 12*(1-0.19), scale = 0.9)
+  } else {
+    plotname <- paste0("main_overview_",stringr::str_replace(wwtp_season_list[[i]]$season_select,"/","-"),".pdf")
+    ggsave(plot = overview_plot, here::here("figures", "real_time", plotname), width = 10, height = 12, scale = 0.9)
+  }
+}
+```
+
+#### Additional figures
+```{r fig.width = 10, fig.height = 9.72}
+wwtp_season_list <- list(
+  list(
+    season_select = "2022/23",
+    wwtps_select = c(
+      "Geneva" = "STEP Aire",
+      "Thal/Altenrhein" = "ARA Altenrhein",
+      "Laupen/Sensetal" = "ARA Sensetal"
+      ),
+    use_growth_rate = FALSE,
+    show_flow = TRUE
+  ),
+    list(
+    season_select = "2023/24",
+    wwtps_select = c(
+      "Geneva" = "STEP Aire",
+      "Thal/Altenrhein" = "ARA Altenrhein",
+      "Laupen/Sensetal" = "ARA Sensetal"
+      ),
+    use_growth_rate = FALSE,
+    show_flow = TRUE
+  ),
+  list(
+    season_select = "2023/24",
+    wwtps_select = c(
+      "Lausanne" = "STEP Vidy",
+      "Bern" = "ARA Region Bern",
+      "Basel" = "ARA Basel/Prorheno"
+      ),
+    use_growth_rate = FALSE,
+    show_flow = TRUE
+  ),
+  list(
+    season_select = "2023/24",
+    wwtps_select = c(
+      "Luzern" = "ARA Buholz",
+      "Porrentruy" = "STEP Porrentruy",
+      "Neuchatel" = "STEP Neuchatel"
+      ),
+    use_growth_rate = FALSE,
+    show_flow = TRUE
+  ),
+  list(
+    season_select = "2023/24",
+    wwtps_select = c(
+      "Zuchwil" = "ARA Zuchwil",
+      "Schwyz" = "ARA Schwyz"
+      ),
+    use_growth_rate = FALSE,
+    show_flow = TRUE
+  )
+)
+  
+for (i in 1:length(wwtp_season_list)) {
+  wwtp_panels <- get_wwtp_panels(
+    season_select = wwtp_season_list[[i]]$season_select,
+    wwtps_select = wwtp_season_list[[i]]$wwtps_select,
+    use_growth_rate = wwtp_season_list[[i]]$use_growth_rate,
+    show_flow = wwtp_season_list[[i]]$show_flow
+    )
+  overview_plot <- cowplot::plot_grid(plotlist = wwtp_panels, nrow = 1, rel_widths = c(0.357, 0.318, 0.338))
+  plotname <- stringr::str_replace_all(paste0("overview_",paste(names(wwtp_season_list[[i]]$wwtps_select), collapse = "-"),"_",wwtp_season_list[[i]]$season_select,".pdf"),"/","-")
+  print(plotname)
+  ggsave(plot = overview_plot, here::here("figures", "real_time", plotname), width = 10, height = 12, scale = 0.9)
+}
+```
+WWTP sizes
+```{r}
+readr::read_csv(here::here("data", "data merging", "wwtp_info.csv"))
+```
+
+## Pruning
+The following code can be used to clean the pipeline from unused objects
+
+```{r}
+for (pipeline in c("_overview_22-23", "_overview_23-24")) {
+  setup_pipeline(pipeline)
+  tar_prune()
+  prune_results(approach = "EpiSewer", remove_all_jobfiles = TRUE, remove_all_outputs = TRUE)
+}
+```
+

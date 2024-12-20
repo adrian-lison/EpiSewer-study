@@ -1,0 +1,141 @@
+```{r setup, include = FALSE}
+knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
+```
+```{r}
+library(targets)
+library(dplyr)
+library(EpiSewer)
+library(ggplot2)
+source("code/pipeline/utils_pipeline.R")
+source("code/pipeline/utils_real_time.R")
+source("data/assumptions/epi_params_EpiSewer-study.R")
+source("code/local_config.R")
+```
+
+Create pipeline folders if they do not exist
+```{r}
+setup_pipeline("_no_outliers")
+```
+
+## Run pipelines
+
+```{r, include = FALSE}
+all_pipelines <- c("_no_outliers")
+for (selection_to_run in all_pipelines) {
+  run_pipeline(targets_proj_name = selection_to_run, submit = T)
+  if(length(tar_read(jobs_EpiSewer_invalid))>0) {
+    warning("There are invalid jobs.")
+  }
+}
+```
+
+Check results
+```{r}
+rbindlist(lapply(all_pipelines, function(pipeline) {
+  suppressMessages(setup_pipeline(pipeline))
+  return(tar_read(job_EpiSewer_submission) |>
+    mutate(total = 1, .before = exists) |>
+    summarise(across(total:submitted, sum, na.rm = T)) |> 
+    mutate(pipeline = pipeline, .before = total)
+    )
+}))
+```
+
+## Load results
+```{r}
+job_EpiSewer_result_no_outliers <- load_EpiSewer_results("_no_outliers")
+data_PCR_agg_select_no_outliers <- get_data_PCR_agg_select("_no_outliers")
+data_flow_select_no_outliers <- get_data_flow_select("_no_outliers")
+
+# Here we use the models fitted for the main analysis, where outliers were included
+job_EpiSewer_result_outliers <- load_EpiSewer_results("_overview_23-24")
+data_PCR_agg_select_outliers <- get_data_PCR_agg_select("_overview_23-24")
+data_flow_select_outliers <- get_data_flow_select("_overview_23-24")
+```
+
+```{r}
+results_index_no_outliers <- bind_rows(lapply(job_EpiSewer_result_no_outliers, function(x) {
+  if (length(x) == 0) { data.frame(wwtp = NA, target = NA, estimation_date = NA)
+  } else {
+    return(data.frame(
+      wwtp = x$job$selection$wwtp,
+      target = x$job$selection$target,
+      estimation_date = lubridate::as_date(x$job$selection$date_select[[1]]["to"]),
+      season = ifelse(lubridate::as_date(x$job$selection$date_select[[1]]["to"])<"2023-08-01","2022/23","2023/24"),
+      outliers = FALSE
+  ))}
+  }))
+rownames(results_index_no_outliers) <- NULL
+results_index_no_outliers$i <- 1:nrow(results_index_no_outliers)
+
+results_index_outliers <- bind_rows(lapply(job_EpiSewer_result_outliers, function(x) {
+  if (length(x) == 0) { data.frame(wwtp = NA, target = NA, estimation_date = NA)
+  } else {
+    return(data.frame(
+      wwtp = x$job$selection$wwtp,
+      target = x$job$selection$target,
+      estimation_date = lubridate::as_date(x$job$selection$date_select[[1]]["to"]),
+      season = ifelse(lubridate::as_date(x$job$selection$date_select[[1]]["to"])<"2023-08-01","2022/23","2023/24")
+  ))}
+  }))
+rownames(results_index_outliers) <- NULL
+results_index_outliers$i <- 1:nrow(results_index_outliers)
+```
+
+## Plotting
+
+```{r}
+selection_list <- list(
+  list(wwtp_select = "ARA Werdhoelzli", target_select = "RSV-N"),
+  list(wwtp_select = "ARA Chur", target_select = "SARS-N2")
+)
+```
+
+```{r}
+palette_targets <- c("SARS-N2" = "#BC3C29FF", "IAV-M" = "#0072B5FF", "RSV-N" = "#E18727FF")
+```
+
+```{r}
+lapply(selection_list, function(selection) {
+  results_select <- list(
+    Excluded = job_EpiSewer_result_no_outliers[[results_index_no_outliers |> filter(wwtp == selection$wwtp_select, target == selection$target_select) |> pull(i) |> as.integer()]],
+  Included = job_EpiSewer_result_outliers[[results_index_outliers |> filter(wwtp == selection$wwtp_select, target == selection$target_select) |> pull(i) |> as.integer()]]
+)
+
+data_select <- data_PCR_agg_select_outliers[[results_index_outliers |> filter(wwtp == selection$wwtp_select, target == selection$target_select) |> pull(i) |> as.integer()]]
+
+ymax <- results_select$Excluded$summary$concentration[, max(upper_0.95)]
+
+concentration_plot <- plot_concentration(
+  results_select, measurements = data_select,
+  concentration_col = "gc_per_mlww",
+  forecast = FALSE, median = T) + theme(legend.position = "top", legend.title = element_text()) + 
+  geom_point(data = data_select, aes(x = date, y = gc_per_mlww), shape = 4, color = "#4d4d4d") +
+  coord_cartesian(ylim = c(0, ymax)) +
+  scale_color_manual(name = "Outliers", values = c("black", palette_targets[[selection$target_select]])) +
+  scale_fill_manual(name = "Outliers", values = c("black", palette_targets[[selection$target_select]])) +
+  guides(color = guide_legend(reverse = TRUE), fill = guide_legend(reverse = TRUE)) +
+  ylab(expression(C[t]~plain("[gc / mL]")))
+
+R_plot <- plot_R(results_select, median = T, forecast = FALSE) + 
+  theme(legend.position = "top", legend.title = element_text()) +
+  scale_color_manual(name = "Outliers", values = c("black", palette_targets[[selection$target_select]])) +
+  scale_fill_manual(name = "Outliers", values = c("black", palette_targets[[selection$target_select]])) +
+  guides(color = guide_legend(reverse = TRUE), fill = guide_legend(reverse = TRUE))
+
+combined_plot <- cowplot::plot_grid(
+  concentration_plot + theme(axis.title.x = element_blank(), axis.text.x = element_blank()) + coord_cartesian(xlim = as.Date(c("2023-09-01", "2024-06-15")), ylim = c(0, ymax)),
+  R_plot + theme(legend.position = "none", axis.title.x = element_blank()) + coord_cartesian(xlim = as.Date(c("2023-09-01", "2024-06-15"))) + ylab(expression(R[t])),
+  ncol = 1, align = "v", rel_heights = c(0.53, 0.47)
+)
+print(combined_plot)
+ggsave(plot = combined_plot, file = here::here("figures", "outliers", paste0("outliers_", selection$wwtp_select, "_", selection$target_select, ".pdf")), width = 10, height = 5)
+})
+```
+## Pruning
+The following code can be used to clean the pipeline from unused objects
+
+```{r}
+tar_prune()
+```
+

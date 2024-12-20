@@ -1,0 +1,760 @@
+## Setup
+```{r setup, include = FALSE}
+knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
+```
+```{r}
+library(targets)
+library(dplyr)
+library(EpiSewer)
+library(ggplot2)
+library(ggpattern)
+library(data.table)
+library(scoringutils)
+source("code/pipeline/utils_pipeline.R")
+source("code/utils_postprocess.R")
+source("code/pipeline/utils_real_time.R")
+source("data/assumptions/epi_params_EpiSewer-study.R")
+source("code/local_config.R")
+```
+
+Create pipeline folders if they do not exist
+```{r}
+create_real_time_pipelines("_real_time_selection_targets_22-23") 
+all_pipelines <- paste0("_real_time_", names(all_selection_targets))
+```
+
+```{r}
+create_real_time_pipelines("_real_time_selection_targets_23-24") 
+all_pipelines <- paste0("_real_time_", names(all_selection_targets))
+```
+
+## Run pipelines
+
+```{r}
+create_real_time_pipelines("_real_time_selection_targets_22-23") 
+all_pipelines <- paste0("_real_time_", names(all_selection_targets))
+print(paste("Running", length(names(all_selection_targets)), "pipelines"))
+
+for (selection_to_run in all_pipelines) {
+  run_pipeline(targets_proj_name = selection_to_run, submit = T)
+  if(length(tar_read(jobs_EpiSewer_invalid))>0) {
+    warning("There are invalid jobs.")
+  }
+}
+```
+
+```{r}
+create_real_time_pipelines("_real_time_selection_targets_23-24") 
+all_pipelines <- paste0("_real_time_", names(all_selection_targets))
+print(paste("Running", length(names(all_selection_targets)), "pipelines"))
+
+for (selection_to_run in all_pipelines) {
+  run_pipeline(targets_proj_name = selection_to_run, submit = T)
+  if(length(tar_read(jobs_EpiSewer_invalid))>0) {
+    warning("There are invalid jobs.")
+  }
+}
+```
+
+Check all results
+```{r}
+all_pipelines <- purrr::list_c(lapply(c("_real_time_selection_targets_22-23","_real_time_selection_targets_23-24"), function(x) {
+  source(paste0("pipelines/", x, ".R"))
+  paste0("_real_time_", names(all_selection_targets))
+}))
+```
+
+```{r}
+rbindlist(lapply(all_pipelines, function(pipeline) {
+  suppressMessages(setup_pipeline(pipeline))
+  return(tar_read(job_EpiSewer_submission) |>
+    mutate(total = 1, .before = exists) |>
+    summarise(across(total:submitted, sum, na.rm = T)) |> 
+    mutate(pipeline = pipeline, .before = total)
+    )
+}))
+```
+
+## Load results
+```{r}
+all_pipelines <- purrr::list_c(lapply(c("_real_time_selection_targets_22-23","_real_time_selection_targets_23-24"), function(x) {
+  source(paste0("pipelines/", x, ".R"))
+  paste0("_real_time_", names(all_selection_targets))
+}))
+```
+
+```{r}
+job_EpiSewer_result <- load_EpiSewer_results(all_pipelines)
+data_PCR_agg_select <- get_data_PCR_agg_select(all_pipelines)
+data_flow_select <- get_data_flow_select(all_pipelines)
+```
+
+```{r}
+get_season <- function(date) {
+  if (date > as.Date("2022-08-01") & date <= as.Date("2023-08-01")) {
+    return("2022/23")
+  }
+  else if (date > as.Date("2023-08-01") & date <= as.Date("2024-08-01")) {
+    return("2023/24")
+  } else {
+    return("unknown")
+  }
+}
+
+results_index <- bind_rows(lapply(job_EpiSewer_result, function(x) {
+  if (length(x) == 0) { data.frame(wwtp = NA, target = NA, estimation_date = NA, season = NA, R_model = NA)
+  } else {
+    return(data.frame(
+      wwtp = x$job$selection$wwtp,
+      target = x$job$selection$target,
+      estimation_date = lubridate::as_date(x$job$selection$date_select[[1]]["to"]),
+      season = sapply(lubridate::as_date(x$job$selection$date_select[[1]]["to"]), get_season),
+      R_model = x$job$selection$module_infections
+  ))}
+  }))
+rownames(results_index) <- NULL
+results_index$i <- 1:nrow(results_index)
+
+get_result_label <- function(x) {
+  paste(
+    x$summary$R[type == "estimate", max(date)],
+    x$job$selection$wwtp,
+    x$job$selection$target,
+    x$job$selection$season,
+    x$job$selection$module_infections
+    )
+}
+
+get_result_label_minimal <- function(x) {
+  paste(
+    x$job$selection$wwtp,
+    x$job$selection$target,
+    paste("Estimation date:", x$summary$R[type == "estimate", max(date)]),
+    sep = " | "
+    )
+}
+```
+
+## Preparation
+
+```{r}
+palette_targets <- c("#BC3C29FF","#0072B5FF","#E18727FF")
+```
+
+### Select season
+In the following, the season and wwtps for which to compute performance scores are selected
+```{r}
+wwtps_select <- c("Zurich" = "ARA Werdhoelzli", "Lugano" = "CDA Lugano", "Chur" = "ARA Chur")
+season_select <- "2023/24"
+selection <- list(
+  list(wwtp_select = wwtps_select[1], target_select = "SARS-N2", season_select = season_select, R_model_select = "R_splines"),
+  list(wwtp_select = wwtps_select[1], target_select = "IAV-M", season_select = season_select, R_model_select = "R_splines"),
+  list(wwtp_select = wwtps_select[1], target_select = "RSV-N", season_select = season_select, R_model_select = "R_splines"),
+  list(wwtp_select = wwtps_select[2], target_select = "SARS-N2", season_select = season_select, R_model_select = "R_splines"),
+  list(wwtp_select = wwtps_select[2], target_select = "IAV-M", season_select = season_select, R_model_select = "R_splines"),
+  list(wwtp_select = wwtps_select[2], target_select = "RSV-N", season_select = season_select, R_model_select = "R_splines"),
+  list(wwtp_select = wwtps_select[3], target_select = "SARS-N2", season_select = season_select, R_model_select = "R_splines"),
+  list(wwtp_select = wwtps_select[3], target_select = "IAV-M", season_select = season_select, R_model_select = "R_splines"),
+  list(wwtp_select = wwtps_select[3], target_select = "RSV-N", season_select = season_select, R_model_select = "R_splines")
+)
+
+results_select_list <- lapply(selection, function(x) {
+  res <- results_index |> filter(wwtp == x$wwtp_select, target == x$target_select, season == x$season_select, R_model == x$R_model_select)
+  stopifnot(nrow(res)>0)
+  res |> filter(estimation_date != max(estimation_date, na.rm = T))
+})
+
+baseline_select_list <- lapply(selection, function(x) {
+  results_index |> filter(wwtp == x$wwtp_select, target == x$target_select, season == x$season_select, R_model == x$R_model_select) |> slice_max(estimation_date)
+})
+```
+
+### Load wave dates
+```{r}
+wave_dates <- readr::read_csv(here::here("data", "assumptions", "wave_dates.csv"))
+
+start_date_list <- lapply(baseline_select_list, function(baseline_select) {
+  wave_dates |> filter(wwtp == baseline_select$wwtp[1], target == baseline_select$target[1], season == baseline_select$season[1]) |> pull(start_date)
+})
+
+end_date_list <- lapply(baseline_select_list, function(baseline_select) {
+  wave_dates |> filter(wwtp == baseline_select$wwtp[1], target == baseline_select$target[1], season == baseline_select$season[1]) |> pull(end_date)
+})
+```
+### Infection trends
+```{r}
+infections_trend_list <- lapply(baseline_select_list, function(baseline_select) {
+  R_baseline <- job_EpiSewer_result[[baseline_select$i]]$summary$R[seeding == FALSE & type=="estimate",]
+  setorderv(R_baseline, cols = "date")
+  R_baseline[, R_value := median]
+  R_baseline[, infection_trend_type := ifelse(R_value > 1, "increasing", "decreasing")]
+  R_baseline[, wwtp := baseline_select$wwtp[1]]
+  R_baseline[, target := baseline_select$target[1]]
+  return(R_baseline[, c("wwtp", "target", "date", "R_value", "infection_trend_type")])
+})
+```
+
+```{r}
+rbindlist(infections_trend_list) |> 
+  filter(!is.na(R_value)) |> 
+  ggplot(aes(x=date, y=R_value)) + 
+  geom_hline(yintercept = 1, linetype = "dashed") +
+  geom_point(aes(color = infection_trend_type)) + 
+  scale_x_date(date_labels = "%m\n%y") +
+  facet_grid(wwtp~target, scales = "free_y") +
+  theme_bw() + theme(legend.position = "top")
+```
+
+## Results
+### Detected outliers
+```{r}
+detected_outliers <- lapply(baseline_select_list, function(baseline_select) {
+  if (nrow(baseline_select) == 0 || is.null(job_EpiSewer_result[[baseline_select$i]]$summary$outliers)) {
+    return(NULL)
+  }
+  outlier_df <- job_EpiSewer_result[[baseline_select$i]]$summary$outliers[epsilon > 1, "date"]
+  outlier_df[ , wwtp := baseline_select$wwtp[1]]
+  outlier_df[ , target := baseline_select$target[1]]
+  outlier_df[ , outlier_detected := TRUE]
+  data.table::setcolorder(outlier_df, c("wwtp", "target", "date", "outlier_detected"))
+  return(outlier_df)
+})
+```
+
+### Catchment population sizes
+```{r}
+wwtps <- readr::read_csv(
+  here::here("data", "data merging", "wwtp_info.csv"),
+  show_col_types = FALSE
+) %>%
+  select(name, ara_id, population)
+
+wwtps |> filter(name %in% unique(sapply(baseline_select_list, function(x) x$wwtp))) |> select(name, population)
+```
+
+### Real-time R coverage
+
+```{r}
+R_real_time_list <- get_R_median_real_time_list(results_select_list, baseline_select_list)
+```
+
+```{r}
+R_coverage <- rbindlist(lapply(1:length(baseline_select_list), function(i) {
+  results_select <- results_select_list[[i]]
+  baseline_select <- baseline_select_list[[i]]
+  return(R_real_time_list[[i]][
+      date >= start_date_list[[i]] & 
+      estimation_date > start_date_list[[i]] &
+      date <= end_date_list[[i]], 
+    .(
+      wwtp = baseline_select$wwtp,
+      target = baseline_select$target,
+      coverage = within
+    ), 
+    by = c("date", "estimation_date", "h")])
+}))
+```
+
+```{r}
+R_coverage_week <- R_coverage[, h_week := (-as.numeric(h) %/% 7)][h<=14 & h >= - 9*7, .(coverage = sum(coverage<0.95, na.rm = T)/sum(!is.na(coverage))), by = c("wwtp", "target", "h_week")]
+
+target_shedding_windows <- data.frame(
+  target = as.character(unique(R_coverage_week$target))
+) |> mutate(
+  window_q90 = sapply(target, function(x) (which(cumsum(get_shedding_dist(x))>=0.9)[1]-1) + 0*(which(cumsum(get_generation_dist(x))>=0.9)[1])),
+  window_q90_week = window_q90 / 7,
+  y = 0.85-c(0.05, 0.05, 0.05), angle = c(90, 90, 90), vjust = c(0, 0, 0), hjust = c(0, 0, 0),
+  target = factor(target, levels = c("SARS-N2", "IAV-M", "RSV-N"), labels = c("SARS-CoV-2", "IAV", "RSV"), ordered = T)
+  )
+
+R_coverage_week[
+  , target := factor(target, levels = c("SARS-N2", "IAV-M", "RSV-N"), labels = c("SARS-CoV-2", "IAV", "RSV"), ordered = T)
+  ][
+  , wwtp := factor(wwtp, levels = wwtps_select, labels = names(wwtps_select), ordered = T)
+  ]
+
+consistency_plot <- R_coverage_week |> 
+  ggplot(aes(x=h_week)) +
+  geom_vline(xintercept = 0, linetype = "solid", color = "grey") +
+  geom_vline(data = target_shedding_windows, aes(xintercept = window_q90_week, color = target), linetype = "dashed", show.legend = FALSE) +
+  geom_text(data = target_shedding_windows |> mutate(wwtp := factor("ARA Chur", levels = wwtps_select, labels = names(wwtps_select), ordered = T)), aes(x = window_q90_week, color = target, label = paste(target), y = y, angle = angle, vjust = vjust, hjust = hjust),
+           size = 2.5, nudge_x = -0.05, nudge_y = 0.02, show.legend = FALSE
+            ) +
+  geom_line(aes(y=coverage, color = target)) +
+  geom_point(aes(y=coverage, color = target)) +
+  theme_bw() +
+  facet_grid(wwtp ~ .) +
+  theme(
+    legend.position = "top",
+    strip.background = element_rect(fill = "white"),
+    panel.grid.minor = element_blank()
+    ) +
+  xlab("Real-time lag [weeks]") + 
+  ylab(expression(Retrospective~R[t]~coverage)) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1), expand = expansion(add = c(0.04, 0.01))) +
+  scale_x_reverse(breaks = seq(-2,20), expand = expansion(add = c(0, 0.2))) +
+  coord_cartesian(ylim = c(0.85, 1), xlim = c(8.5, -1.5)) +
+  scale_color_manual(name = "Pathogen", values = palette_targets) +
+  guides(color = guide_legend())
+consistency_plot
+```
+
+
+### Forecast performance 
+
+#### Preparation
+
+Forecast horizon to be evaluated
+```{r}
+horizon_selection <- 14
+```
+
+```{r}
+ground_truth_list <- mapply(function(baseline_select, detected_outliers_df) {
+  ground_truth <- merge(
+    data_PCR_agg_select[[baseline_select$i[1]]][, c("date", "gc_per_mlww")],
+    data_flow_select[[baseline_select$i[1]]][, c("date", "flow")]
+  )
+  ground_truth[, conc_normalized := gc_per_mlww * flow]
+  ground_truth <- ground_truth[!(date %in% detected_outliers_df[, date]),] # remove outliers from evaluation
+  return(ground_truth)
+}, baseline_select = baseline_select_list, detected_outliers_df = detected_outliers, SIMPLIFY = FALSE)
+```
+
+```{r}
+# note that scoringutils will give an irrelevant warning that there is no model column in the data - the forecasts are correctly stratified
+all_forecasts_list <- get_forecasts_list(results_select_list, baseline_select_list, ground_truth_list)
+all_baseline_list <- get_baseline_list(baseline_select_list, ground_truth_list, all_forecasts_list)
+```
+```{r}
+metrics_list <- list(
+  "wis" = wis, 
+  "overprediction" = overprediction_quantile,
+  "underprediction" = underprediction_quantile,
+  "dispersion" = dispersion_quantile,
+  "bias" = bias_quantile,
+  "interval_coverage_50" = purrr::partial(interval_coverage, interval_range = 50),
+  "interval_coverage_90" = purrr::partial(interval_coverage, interval_range = 90),
+  "interval_coverage_deviation" = interval_coverage_deviation
+)
+conc_score_list <- lapply(all_forecasts_list, function(all_forecasts) score(all_forecasts, metrics = metrics_list))
+baseline_score_list <- lapply(all_baseline_list, function(all_baseline) score(all_baseline, metrics = metrics_list))
+```
+
+#### Bias
+
+Infections increasing vs decreasing
+```{r}
+conc_score_total_agg_list <- lapply(1:length(conc_score_list), function(i) {
+  start_date <- start_date_list[[i]]
+  end_date <- end_date_list[[i]]
+  conc_score_agg <- merge(conc_score_list[[i]], infections_trend_list[[i]], by = c("wwtp","target","date"))
+  return(conc_score_agg[
+    estimation_date >= (start_date) & estimation_date <= (end_date) & h <= horizon_selection,
+    .(bias = mean(bias, na.rm = T)),
+    by = c("wwtp","target","infection_trend_type")
+    ])
+})
+
+bias_plot_data <- rbindlist(conc_score_total_agg_list)[
+  , target := factor(target, levels = c("SARS-N2", "IAV-M", "RSV-N"), labels = c("SARS-CoV-2", "IAV", "RSV"), ordered = T)
+  ][
+  , wwtp := factor(wwtp, levels = wwtps_select, labels = names(wwtps_select), ordered = T)
+  ][
+  , infection_trend_type := factor(infection_trend_type, levels = c("increasing", "decreasing"))
+  ]
+
+bias_plot_data[, wwtp := factor(wwtp)]
+bias_plot_data[, target := factor(target)]
+bias_plot_data[, infection_trend_type := factor(infection_trend_type)]
+bias_plot_data[, nudge_y := -(as.numeric(infection_trend_type)+2*(as.numeric(target)-1)-(6/2+0.5))*0.15]
+
+bias_plot <- bias_plot_data |> 
+  ggplot(aes(x=bias, y=wwtp)) +
+  geom_vline(xintercept = 0, linetype = "dashed") + 
+  geom_point(aes(shape = infection_trend_type, color = target), size = 3, position = position_nudge(y = bias_plot_data$nudge_y)) +
+  coord_cartesian(xlim = c(-1,1)) +
+  facet_grid(wwtp ~ ., scales = "free_y") +
+  scale_color_manual(name = "Pathogen", values = palette_targets) +
+  scale_shape_manual(name = "Infection trend", values = c(17, 19)) +
+  theme_bw() +
+  theme(
+    legend.position = "inside",
+    legend.position.inside = c(0.01, 0.99),
+    legend.justification = c("left", "top"),
+    legend.background = element_blank(),
+    legend.title = element_text(size = 7),
+    legend.text = element_text(size = 7),
+    strip.background = element_rect(fill = "white"),
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank(),
+    panel.grid.major.y = element_blank()
+    ) +
+  xlab("Bias score") + ylab(" ") +
+  guides(shape = guide_legend(), color = guide_none())
+
+bias_plot
+```
+
+#### Interval coverage
+
+```{r}
+coverage_data <- rbindlist(lapply(1:length(all_forecasts_list), function(i) {
+  all_forecasts <- all_forecasts_list[[i]]
+  all_forecasts <- all_forecasts[quantile_level %in% c(0.005, round(seq(0, 1, by = 0.05),3), 0.995),]
+  start_date <- start_date_list[[i]]
+  end_date <- end_date_list[[i]]
+  get_coverage(
+  all_forecasts[h <= horizon_selection & estimation_date >= start_date & estimation_date <= end_date 
+                  ,][
+  , target := factor(target, levels = c("SARS-N2", "IAV-M", "RSV-N"), labels = c("SARS-CoV-2", "IAV", "RSV"), ordered = T)
+  ][
+  , wwtp := factor(wwtp, levels = wwtps_select, labels = names(wwtps_select), ordered = T)
+  ], by = c("wwtp", "target")
+  )}
+))
+
+coverage_plot <- ggplot(coverage_data, aes(x = interval_range, y = interval_coverage*100, color = target)) +
+  geom_polygon(data = data.frame(x = c(0, 0, 100), y = c(0, 100, 100), g = c("o", "o", "o"), stringsAsFactors = TRUE),
+                 aes(x = x, y = y), alpha = 0.15,
+                 colour = "white", fill = "grey") +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "grey") +
+  geom_line(aes(group = target)) +
+  facet_wrap(~wwtp, ncol = 1) +
+  theme_bw() +
+  facet_grid(wwtp ~ .) +
+  theme(
+    legend.position = "top",
+    strip.background = element_rect(fill = "white"),
+    panel.grid.major = element_blank(), 
+    panel.grid.minor = element_blank()
+    ) +
+  scale_color_manual(name="Pathogen", values = palette_targets) +
+  scale_y_continuous(labels = scales::label_percent(accuracy = 1, scale = 1)) +
+  scale_x_continuous(labels = scales::label_percent(accuracy = 1, scale = 1)) +
+  ylab("% of observations contained") + xlab("Forecast interval") +
+  coord_cartesian(expand = FALSE, ylim = c(-5,105))
+
+coverage_plot
+```
+
+### Forecast plot
+```{r fig.width = 10, fig.height = 5}
+if (season_select == "2023/24") {
+  example_i <- 3
+
+base_data <- data_PCR_agg_select[[baseline_select_list[[example_i]]$i]]
+base_flow <- data_flow_select[[baseline_select_list[[example_i]]$i]]
+base_res <- job_EpiSewer_result[[baseline_select_list[[example_i]]$i]]
+
+dates_show <- results_select_list[[example_i]] |> 
+  mutate(
+    year = lubridate::year(estimation_date),
+    month = lubridate::month(estimation_date)
+    ) |> 
+  filter(estimation_date >= "2023-12-01", estimation_date < "2024-04-01") |> 
+  group_by(year, month) |> 
+  slice_min(estimation_date) |> 
+  pull(estimation_date)
+
+dates_show <- as.Date(c("2023-12-01","2024-01-12","2024-02-21"))
+
+res <- job_EpiSewer_result[results_select_list[[example_i]] |> filter(estimation_date %in% dates_show) |> pull(i)]
+names(res) <- paste0(format(dates_show, "%d %b, %Y"), ", Zurich")
+
+conc_plot <- plot_concentration(
+  res,
+  measurements = base_data,
+  flows = base_flow,
+  concentration_col = "gc_per_mlww",
+  normalized = TRUE,
+  date_margin_right = 300,
+  facet_model = T,
+  facet_direction = "cols",
+  obs_size = 1, obs_shape = 20, obs_forecast_shape = 8
+  ) + 
+  coord_cartesian(ylim = c(0,75), xlim = as.Date(c("2023-10-20", "2024-03-15"))) +
+  scale_color_manual(values = rep("#E18727FF", 3)) +
+  scale_fill_manual(values = rep("#E18727FF", 3)) +
+  scale_x_date(date_breaks = "1 months", date_labels = "%m/%y") +
+  theme(
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank()
+  ) +
+  ylab(expression(C[t]^plain("norm")~plain("[gc/mL]")))
+
+R_plot <- plot_R(
+  c(res, list(baseline = base_res)),
+  date_margin_right = 300,
+  facet_model = T,
+  facet_direction = "cols",
+  base_model = "baseline"
+  ) + 
+  coord_cartesian(ylim = c(0.6,1.8), xlim = as.Date(c("2023-10-20", "2024-03-15"))) +
+  scale_color_manual(values = rep("#E18727FF", 3)) +
+  scale_fill_manual(values = rep("#E18727FF", 3)) +
+  scale_x_date(date_breaks = "1 months", date_labels = "%m/%y") +
+  theme(
+    strip.background = element_blank(),
+    strip.text = element_blank(),
+    axis.title.x = element_blank()
+  ) +
+  ylab(expression(R[t]))
+
+forecast_plot <- cowplot::plot_grid(
+  conc_plot, NULL, R_plot,
+  ncol = 1, align = "v",
+  labels = c("A", ""),
+  rel_heights = c(0.49, -0.02, 0.51)
+)
+
+forecast_plot
+}
+```
+
+### Combined figure
+```{r fig.width = 10, fig.height = 9}
+combined_legend <- cowplot::plot_grid(
+  cowplot::get_plot_component(consistency_plot, pattern = "guide-box-top"),
+  nrow = 1
+  )
+
+if (season_select == "2023/24") {
+  combined_fig <- cowplot::plot_grid(
+  combined_legend,
+  forecast_plot,
+  NULL,
+  cowplot::plot_grid(
+    consistency_plot + theme(legend.position = "none"),
+    bias_plot,
+    coverage_plot + theme(legend.position = "none"),
+    nrow = 1, labels = c("B", "C", "D"), align = "h", axis = "tb", rel_widths = c(1, 0.9, 1)),
+  ncol = 1, rel_heights = c(0.05, 0.4, 0.01, 0.61), align = "v"
+)
+combined_fig
+  
+  ggsave(combined_fig, filename = here::here("figures", "real_time", paste0("combined_performance_all_",stringr::str_replace(season_select,"/","-"),".pdf")), width = 10, height = 9, scale = 0.9)
+} else if (season_select == "2022/23") {
+  combined_fig <- cowplot::plot_grid(
+  combined_legend,
+  cowplot::plot_grid(
+    consistency_plot + theme(legend.position = "none"),
+    bias_plot,
+    coverage_plot + theme(legend.position = "none"),
+    nrow = 1, labels = c("A", "B", "C"), align = "h", axis = "tb", rel_widths = c(1, 0.9, 1)),
+  ncol = 1, rel_heights = c(0.09, 0.91), align = "v"
+)
+combined_fig
+  
+  ggsave(combined_fig, filename = here::here("figures", "real_time", paste0("combined_performance_all_",stringr::str_replace(season_select,"/","-"),".pdf")), width = 10, height = 6, scale = 0.9)
+}
+```
+
+## Diagnostics
+```{r}
+total_draws <- 4*2500 # four chains with 2500 sampling iterations each
+
+diagnostics_index <- cbind(results_index, rbindlist(lapply(job_EpiSewer_result, function(res){
+  n_chains <- res$job$fit_opts$sampler$chains
+  runtime <- ifelse("total" %in% names(res$runtime), res$runtime$total, NA)
+  num_divergent <- ifelse("num_divergent" %in% names(res$diagnostics), sum(res$diagnostics$num_divergent), NA)
+  num_divergent_max <- ifelse("num_divergent" %in% names(res$diagnostics), max(res$diagnostics$num_divergent), NA)
+  min_ebfmi <- ifelse("ebfmi" %in% names(res$diagnostics), min(res$diagnostics$ebfmi), NA)
+  num_max_treedepth <- ifelse("num_max_treedepth" %in% names(res$diagnostics), sum(res$diagnostics$num_max_treedepth), NA)
+  if ("R_diagnostics" %in% names(res$summary)) {
+      mean_rhat <- res$summary$R_diagnostics[seeding == FALSE, mean(rhat, na.rm = T)]
+      share_rhat <- res$summary$R_diagnostics[seeding == FALSE, sum(rhat > 1.05)/.N]
+      mean_ess_bulk <- res$summary$R_diagnostics[seeding == FALSE, mean(ess_bulk, na.rm = T)]
+      mean_ess_tail <- res$summary$R_diagnostics[seeding == FALSE, mean(ess_tail, na.rm = T)]
+      share_ess_bulk <- res$summary$R_diagnostics[seeding == FALSE, sum(ess_bulk < n_chains*100)/.N]
+      share_ess_tail <- res$summary$R_diagnostics[seeding == FALSE, sum(ess_tail < n_chains*100)/.N]
+  } else {
+    mean_rhat <- NA
+    share_rhat <- NA
+    mean_ess_bulk <- NA
+    mean_ess_tail <- NA
+    share_ess_bulk <- NA
+    share_ess_tail <- NA
+  }
+  data.frame(
+    runtime = runtime,
+    num_divergent = num_divergent,
+    num_divergent_max = num_divergent_max,
+    min_ebfmi = min_ebfmi,
+    num_max_treedepth = num_max_treedepth,
+    mean_rhat = mean_rhat,
+    share_rhat = share_rhat,
+    mean_ess_bulk = mean_ess_bulk,
+    mean_ess_tail = mean_ess_tail,
+    share_ess_bulk = share_ess_bulk,
+    share_ess_tail = share_ess_tail
+    )
+})))
+diagnostics_index <- diagnostics_index |> mutate(
+  target = factor(target, levels = c("SARS-N2", "IAV-M", "RSV-N"), labels = c("SARS-CoV-2", "IAV", "RSV"), ordered = T),
+  wwtp = factor(wwtp, levels = wwtps_select, labels = names(wwtps_select), ordered = T)
+)
+```
+
+```{r}
+diagnostics_theme_ts <- function(p) {
+  p + geom_point(shape = 4) +
+  facet_grid(target~wwtp) +
+  scale_x_date(date_breaks = "4 months", date_labels = "%m\n%y") +
+  theme_bw() +
+  theme(
+    legend.position = "top",
+    strip.background = element_rect(fill = "white")
+    ) +
+  xlab("Estimation date") +
+  scale_color_manual(name = "Pathogen", values = palette_targets)
+}
+
+diagnostics_theme_bp <- function(p) {
+  p +
+  facet_grid(target~wwtp) +
+  theme_bw() +
+  theme(
+    legend.position = "top",
+    strip.background = element_rect(fill = "white")
+    ) +
+  xlab("Season") +
+  scale_color_manual(name = "Pathogen", values = palette_targets)
+}
+```
+
+
+#### Divergent transitions
+```{r}
+diagnostics_theme_ts(
+  diagnostics_index |> filter(!is.na(target)) |> 
+    ggplot(aes(x = estimation_date, y = num_divergent/total_draws, color = target)) +
+    geom_hline(yintercept = 0.1, linetype = "dashed") +
+    scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
+    ylab("Divergent transitions") + 
+    coord_cartesian(ylim = c(0, 1))
+  )
+
+diagnostics_theme_bp(
+  diagnostics_index |> filter(!is.na(target)) |> 
+    ggplot(aes(x = season, y = num_divergent/total_draws, color = target)) +
+    scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
+    geom_boxplot() +
+   ylab("Divergent transitions") +
+   coord_cartesian(ylim = c(0, 0.15))
+)
+ggsave(here::here("figures", "real_time", "diagnostics_divergent_transitions.pdf"), width = 10, height = 5)
+```
+
+#### EBFMI
+The EBFMI should be > 0.2 for all chains.
+```{r}
+diagnostics_theme_ts(
+  diagnostics_index |> filter(!is.na(target)) |> 
+    ggplot(aes(x = estimation_date, y = min_ebfmi, color = target)) +
+    geom_hline(yintercept = 0.2, linetype = "dashed") +
+    ylab("Smallest E-BFMI")
+)
+
+diagnostics_theme_bp(
+  diagnostics_index |> filter(!is.na(target)) |> 
+    ggplot(aes(x = season, y = min_ebfmi, color = target)) +
+   geom_hline(yintercept = 0.2, linetype = "dashed") +
+    geom_boxplot() +
+   ylab("Smallest E-BFMI") 
+)
+ggsave(here::here("figures", "real_time", "diagnostics_ebfmi.pdf"), width = 10, height = 5)
+```
+
+#### Maximum treedepth events
+```{r}
+diagnostics_theme_ts(
+  diagnostics_index |> filter(!is.na(target)) |> 
+    ggplot(aes(x = estimation_date, y = num_max_treedepth/total_draws, color = target)) +
+    geom_hline(yintercept = 0.01, linetype = "dashed") +
+    ylab("Maximum treedepth events") +
+    scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
+    coord_cartesian(ylim = c(0, 1))
+)
+```
+
+#### Rhat
+Share of dates with Rhat>1.05
+```{r}
+diagnostics_theme_ts(
+  diagnostics_index |> filter(!is.na(target)) |> 
+    ggplot(aes(x = estimation_date, y = share_rhat, color = target)) +
+    scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
+    ylab("R-hat > 1.05") +
+    coord_cartesian(ylim = c(0, 1))
+)
+
+diagnostics_theme_bp(
+  diagnostics_index |> filter(!is.na(target)) |> 
+    ggplot(aes(x = season, y = mean_rhat, color = target)) +
+    geom_hline(yintercept = 1.05, linetype = "dashed") +
+    geom_boxplot() +
+    ylab("R-hat")
+)
+
+diagnostics_theme_bp(
+  diagnostics_index |> filter(!is.na(target)) |> 
+    ggplot(aes(x = season, y = 1-share_rhat, color = target)) +
+    scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
+    geom_boxplot() +
+    ylab("R-hat < 1.05")
+)
+
+ggsave(here::here("figures", "real_time", "diagnostics_rhat.pdf"), width = 10, height = 5)
+```
+
+#### Bulk ESS
+```{r}
+diagnostics_theme_ts(
+  diagnostics_index |> filter(!is.na(target)) |> 
+    ggplot(aes(x = estimation_date, y = mean_ess_bulk, color = target)) +
+    ylab("Effective sample size (bulk)") +
+    geom_hline(yintercept = 400, linetype = "dashed")
+)
+
+diagnostics_theme_bp(
+  diagnostics_index |> filter(!is.na(target)) |> 
+    ggplot(aes(x = season, y = mean_ess_bulk, color = target)) +
+    geom_hline(yintercept = 400, linetype = "dashed") +
+    geom_boxplot() +
+    ylab("Effective sample size (bulk)")
+)
+ggsave(here::here("figures", "real_time", "diagnostics_ess_bulk.pdf"), width = 10, height = 5)
+```
+
+#### Tail ESS
+```{r}
+diagnostics_theme_ts(
+  diagnostics_index |> filter(!is.na(target)) |> 
+    ggplot(aes(x = estimation_date, y = mean_ess_tail, color = target)) +
+    ylab("Effective sample size (tail)") +
+    geom_hline(yintercept = 400, linetype = "dashed")
+)
+
+diagnostics_theme_bp(
+  diagnostics_index |> filter(!is.na(target)) |> 
+    ggplot(aes(x = season, y = mean_ess_tail, color = target)) +
+    geom_hline(yintercept = 400, linetype = "dashed") +
+    geom_boxplot() +
+    ylab("Effective sample size (tail)")
+)
+ggsave(here::here("figures", "real_time", "diagnostics_ess_tail.pdf"), width = 10, height = 5)
+```
+
+## Pruning
+The following code can be used to clean the pipeline from unused objects
+
+```{r}
+for (pipeline in all_pipelines) {
+  setup_pipeline(pipeline)
+  tar_prune()
+  prune_results(approach = "EpiSewer", remove_all_jobfiles = TRUE, remove_all_outputs = TRUE)
+}
+```
+

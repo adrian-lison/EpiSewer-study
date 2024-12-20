@@ -1,0 +1,138 @@
+```{r setup, include = FALSE}
+knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
+```
+```{r}
+library(targets)
+library(dplyr)
+library(EpiSewer)
+library(ggplot2)
+source("code/pipeline/utils_pipeline.R")
+source("code/pipeline/utils_real_time.R")
+source("data/assumptions/epi_params_EpiSewer-study.R")
+source("code/local_config.R")
+```
+
+Create pipeline folders if they do not exist
+```{r}
+all_pipelines <- c("_flow_23-24_ARA_Werdhoelzli", "_flow_23-24_CDA_Lugano", "_flow_23-24_ARA_Chur")
+for (pipeline in names(all_selection_targets)) {
+  setup_pipeline(pipeline)
+}
+```
+
+## Run pipelines
+
+```{r, include = FALSE}
+all_pipelines <- c("_flow_23-24_ARA_Werdhoelzli", "_flow_23-24_CDA_Lugano", "_flow_23-24_ARA_Chur")
+for (selection_to_run in all_pipelines) {
+  run_pipeline(targets_proj_name = selection_to_run, submit = T)
+  if(length(tar_read(jobs_EpiSewer_invalid))>0) {
+    warning("There are invalid jobs.")
+  }
+}
+```
+
+Check results
+```{r}
+rbindlist(lapply(all_pipelines, function(pipeline) {
+  suppressMessages(setup_pipeline(pipeline))
+  return(tar_read(job_EpiSewer_submission) |>
+    mutate(total = 1, .before = exists) |>
+    summarise(across(total:submitted, sum, na.rm = T)) |> 
+    mutate(pipeline = pipeline, .before = total)
+    )
+}))
+```
+
+## Load results
+```{r}
+all_pipelines <- c("_flow_23-24_ARA_Werdhoelzli", "_flow_23-24_CDA_Lugano", "_flow_23-24_ARA_Chur")
+job_EpiSewer_result <- load_EpiSewer_results(all_pipelines)
+data_PCR_agg_select <- get_data_PCR_agg_select(all_pipelines)
+data_flow_select <- get_data_flow_select(all_pipelines)
+```
+
+```{r}
+results_index <- bind_rows(lapply(job_EpiSewer_result, function(x) {
+  if (length(x) == 0) { data.frame(wwtp = NA, target = NA, estimation_date = NA)
+  } else {
+    return(data.frame(
+      wwtp = x$job$selection$wwtp,
+      target = x$job$selection$target,
+      estimation_date = lubridate::as_date(x$job$selection$date_select[[1]]["to"]),
+      season = ifelse(lubridate::as_date(x$job$selection$date_select[[1]]["to"])<"2023-08-01","2022/23","2023/24"),
+      with_flow = x$job$selection$module_sewage == "with_flow"
+  ))}
+  }))
+rownames(results_index) <- NULL
+results_index$i <- 1:nrow(results_index)
+```
+
+## Plotting
+```{r}
+selection_list <- list(
+  list(wwtp_select = "ARA Werdhoelzli", target_select = "SARS-N2", R_lim = c(0.8, 1.2)),
+  list(wwtp_select = "CDA Lugano", target_select = "SARS-N2", R_lim = c(0.7, 1.3)),
+  list(wwtp_select = "ARA Chur", target_select = "SARS-N2", R_lim = c(0.7, 1.3))
+)
+```
+
+```{r}
+palette_flows <- c("Daily"="#BC3C29FF", "Constant"="black")
+```
+
+```{r}
+lapply(selection_list, function(selection) {
+date_lim <- as.Date(c("2023-08-30", "2024-04-15"))
+
+results_select <- job_EpiSewer_result[results_index |> filter(wwtp == selection$wwtp_select, target == selection$target_select) |> pull(i)]
+names(results_select) <- ifelse(results_index |> filter(wwtp == selection$wwtp_select, target == selection$target_select) |> pull(with_flow), "Daily", "Constant")
+
+ymax <- results_select[[1]]$summary$concentration[, max(upper_0.95)]
+                                        
+concentration_plot <- plot_concentration(
+  results_select,
+  concentration_col = "gc_per_mlww",
+  forecast = FALSE, median = T) + theme(legend.position = "top", legend.title = element_text()) + 
+  coord_cartesian(ylim = c(0, ymax)) +
+  scale_color_manual(name = "Flow", values = palette_flows) +
+  scale_fill_manual(name = "Flow", values = palette_flows) +
+  coord_cartesian(xlim = date_lim) +
+  ylab(expression(C[t]~plain("[gc / mL]")))
+
+load_plot <- plot_load(results_select, median = T, forecast = FALSE) + 
+  theme(legend.position = "top", legend.title = element_text()) +
+  scale_color_manual(name = "Flow", values = palette_flows) +
+  scale_fill_manual(name = "Flow", values = palette_flows) +
+  coord_cartesian(xlim = date_lim)
+
+infection_plot <- plot_infections(results_select, median = T, forecast = FALSE) + 
+  theme(legend.position = "top", legend.title = element_text()) +
+  scale_color_manual(name = "Flow", values = palette_flows) +
+  scale_fill_manual(name = "Flow", values = palette_flows) +
+  coord_cartesian(xlim = date_lim)
+
+R_plot <- plot_R(results_select, median = T, forecast = FALSE) + 
+  theme(legend.position = "top", legend.title = element_text()) +
+  scale_color_manual(name = "Flow", values = palette_flows) +
+  scale_fill_manual(name = "Flow", values = palette_flows) +
+  coord_cartesian(xlim = date_lim, ylim = selection$R_lim)
+
+combined_plot <- cowplot::plot_grid(
+  load_plot + theme(axis.title.x = element_blank(), axis.text.x = element_blank()),
+  R_plot + theme(legend.position = "none", axis.title.x = element_blank()) +
+    ylab(expression(R[t])),
+  ncol = 1, align = "v", rel_heights = c(0.53, 0.47)
+)
+
+print(combined_plot)
+ggsave(plot = combined_plot, file = here::here("figures", "flow", paste0("flow_", selection$wwtp_select, "_", selection$target_select, ".pdf")), width = 10, height = 5)
+})
+```
+## Pruning
+The following code can be used to clean the pipeline from unused objects
+
+```{r}
+tar_prune()
+```
+
