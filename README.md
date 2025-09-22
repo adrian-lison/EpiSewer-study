@@ -1,12 +1,22 @@
 # Robust real-time estimation of pathogen transmission dynamics from wastewater
 
-Adrian Lison (1,2)
+Adrian Lison (1,2), 
+Rachel E. McLeod (3), 
+Jana S. Huisman (4), 
+James D. Munday (1,2),
+Christoph Ort (3), 
+Timothy R. Julian (3,5,6), 
+Tanja Stadler (1,2)
 
 (1) ETH Zurich, Department of Biosystems Science and Engineering, Zurich, Switzerland\
-(2) SIB Swiss Institute of Bioinformatics, Lausanne, Switzerland
+(2) SIB Swiss Institute of Bioinformatics, Lausanne, Switzerland\
+(3) Eawag, Swiss Federal Institute of Aquatic Science and Technology, 8600 Dubendorf, Switzerland\
+(4) Physics of Living Systems, Massachusetts Institute of Technology, Cambridge, MA, USA\
+(5) Swiss Tropical and Public Health Institute, 4123 Allschwil, Switzerland\
+(6) University of Basel, 4055 Basel, Switzerland
 
 ## Contents of this repository
-*Code version: v1.0.0*
+*Code version: v1.1.0*
 
 This repository contains the code, data, and analysis scripts of the
 study "Robust real-time estimation of pathogen transmission dynamics from wastewater".
@@ -17,6 +27,7 @@ The repository is structured as follows:
 - **data/assumptions**: Contains assumptions about shedding and generation times of pathogens.
 - **data/ww_data**: Contains the real-world wastewater data used in this study.
   See the [data README](data/ww_data/README.md) for details.
+- **data/sentinella**: Contains open data from Swiss sentinella surveillance. 
 - **notebooks**: Contains all analysis scripts in R notebook format.
 - **pipelines**: Contains scripts to fit wastewater models in `EpiSewer` using a
   modeling pipeline via the `targets` package.
@@ -27,18 +38,14 @@ The analysis scripts are written as R notebooks and are ideally run in an Rstudi
 project. When opening the project, run `renv::restore()` to install all required
 R packages (requires the `renv` package).
 
-Note that a 
-[development branch of EpiSewer](https://github.com/adrian-lison/EpiSewer/tree/shedding_dist_estimate) 
-was used for inference from concentration measurements in this study. To ensure
+Note that this study used a [development version of EpiSewer](https://github.com/adrian-lison/EpiSewer/tree/develop). To ensure
 reproducibility, `renv` will automatically install this version of the package.
-A stable version of the package can be found on the  
-[main branch of EpiSewer](https://github.com/adrian-lison/EpiSewer).
+The current stable version of the package can be installed from the [main branch of EpiSewer](https://github.com/adrian-lison/EpiSewer).
 
-### Running the pipelines
-To rerun the model fitting, the stan inference engine must be installed.
-See [the cmdstanr vignette](https://mc-stan.org/cmdstanr/articles/cmdstanr.html)
+### Re-running of pipelines
+To rerun the model fitting, you must first install the stan inference 
+engine, see [the cmdstanr vignette](https://mc-stan.org/cmdstanr/articles/cmdstanr.html)
 for help.
-
-Note that rerunning all model fits, in particular for the real-time study, will 
-require extensive computational resources, ideally a high-performance computing
-cluster. The provided `targets` pipeline supports parallelization via the crew package. 
+In particular for the real-time study, rerunning all models will 
+require significant computational resources, ideally a high-performance cluster. 
+The provided `targets` pipeline supports parallelization via the crew package.
