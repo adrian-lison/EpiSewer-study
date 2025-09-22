@@ -82,8 +82,8 @@
       "RemoteHost": "api.github.com",
       "RemoteUsername": "adrian-lison",
       "RemoteRepo": "EpiSewer",
-      "RemoteRef": "shedding_dist_estimate",
-      "RemoteSha": "46e7cdca06157452b9f3817b1530a2d5e8927caa",
+      "RemoteRef": "develop",
+      "RemoteSha": "2d1d0d563fdb53f645e46f19f3b7e9f114056592",
       "Remotes": "stan-dev/cmdstanr",
       "Requirements": [
         "Matrix",
@@ -100,6 +100,7 @@
         "ggplot2",
         "lazyeval",
         "lubridate",
+        "posterior",
         "purrr",
         "rlang",
         "rstan",
@@ -107,9 +108,10 @@
         "splines",
         "stats",
         "stringr",
-        "vctrs"
+        "vctrs",
+        "withr"
       ],
-      "Hash": "b9e9fae45f2a20fff1fc32d09664e085"
+      "Hash": "0a604b77f95a878b692c2dc8b0c77b46"
     },
     "GGally": {
       "Package": "GGally",
@@ -359,6 +361,17 @@
       ],
       "Hash": "84a03997fbb5acfb3c9b43bad88fea1f"
     },
+    "S7": {
+      "Package": "S7",
+      "Version": "0.2.0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "R",
+        "utils"
+      ],
+      "Hash": "5deb66b3ae702137e1f4162c11861e76"
+    },
     "SQUAREM": {
       "Package": "SQUAREM",
       "Version": "2021.1",
@@ -451,13 +464,13 @@
     },
     "backports": {
       "Package": "backports",
-      "Version": "1.2.1",
+      "Version": "1.5.0",
       "Source": "Repository",
       "Repository": "CRAN",
       "Requirements": [
         "R"
       ],
-      "Hash": "644043219fc24e190c2f620c1a380a69"
+      "Hash": "e1e1b9d75c37401117b636b7ae50827a"
     },
     "base64enc": {
       "Package": "base64enc",
@@ -776,14 +789,14 @@
     },
     "cmdstanr": {
       "Package": "cmdstanr",
-      "Version": "0.8.1.9000",
+      "Version": "0.9.0.9000",
       "Source": "GitHub",
       "RemoteType": "github",
       "RemoteHost": "api.github.com",
       "RemoteUsername": "stan-dev",
       "RemoteRepo": "cmdstanr",
       "RemoteRef": "master",
-      "RemoteSha": "3ae9080c190eba634fd659ca83261d9fe34b5cad",
+      "RemoteSha": "5f2a8c850890e54e6fccc8108e5a31cb08010ab8",
       "Requirements": [
         "R",
         "R6",
@@ -795,7 +808,7 @@
         "rlang",
         "withr"
       ],
-      "Hash": "a558a295381672a7a35748a9f2a94f99"
+      "Hash": "3b2cd9451edcc7376ff8362e9ed338fc"
     },
     "coarseDataTools": {
       "Package": "coarseDataTools",
@@ -906,10 +919,13 @@
     },
     "cpp11": {
       "Package": "cpp11",
-      "Version": "0.3.1",
+      "Version": "0.5.2",
       "Source": "Repository",
       "Repository": "CRAN",
-      "Hash": "e02edab2bc389c5e4b12949b13df44f2"
+      "Requirements": [
+        "R"
+      ],
+      "Hash": "2720e3fd3dad08f34b19b56b3d6f073d"
     },
     "crayon": {
       "Package": "crayon",
@@ -1079,13 +1095,13 @@
     },
     "dplyr": {
       "Package": "dplyr",
-      "Version": "1.0.7",
+      "Version": "1.1.4",
       "Source": "Repository",
       "Repository": "CRAN",
       "Requirements": [
         "R",
         "R6",
-        "ellipsis",
+        "cli",
         "generics",
         "glue",
         "lifecycle",
@@ -1098,7 +1114,7 @@
         "utils",
         "vctrs"
       ],
-      "Hash": "36f1ae62f026c8ba9f9b5c9a08c03297"
+      "Hash": "fedd9d00c2944ff00a0e2696ccf048ec"
     },
     "dtplyr": {
       "Package": "dtplyr",
@@ -1447,6 +1463,25 @@
       ],
       "Hash": "86ebb3543cdad6520be9bf8863167a9a"
     },
+    "ggh4x": {
+      "Package": "ggh4x",
+      "Version": "0.3.1",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "S7",
+        "cli",
+        "ggplot2",
+        "grid",
+        "gtable",
+        "lifecycle",
+        "rlang",
+        "scales",
+        "stats",
+        "vctrs"
+      ],
+      "Hash": "024c1c1d5894bf313a1625b167984f2e"
+    },
     "ggpattern": {
       "Package": "ggpattern",
       "Version": "1.1.1",
@@ -1467,7 +1502,7 @@
     },
     "ggplot2": {
       "Package": "ggplot2",
-      "Version": "3.5.1",
+      "Version": "3.5.2",
       "Source": "Repository",
       "Repository": "CRAN",
       "Requirements": [
@@ -1488,7 +1523,7 @@
         "vctrs",
         "withr"
       ],
-      "Hash": "44c6a2f8202d5b7e878ea274b1092426"
+      "Hash": "7ad64861e028a777d7d67ff83231b548"
     },
     "ggridges": {
       "Package": "ggridges",
@@ -2382,21 +2417,19 @@
     },
     "pillar": {
       "Package": "pillar",
-      "Version": "1.6.2",
+      "Version": "1.10.2",
       "Source": "Repository",
       "Repository": "CRAN",
       "Requirements": [
         "cli",
-        "crayon",
-        "ellipsis",
-        "fansi",
+        "glue",
         "lifecycle",
         "rlang",
         "utf8",
         "utils",
         "vctrs"
       ],
-      "Hash": "43f228eb4b49093d1c8a5c93cae9efe9"
+      "Hash": "1098920a19b5cd5a15bacdc74a89979d"
     },
     "pingr": {
       "Package": "pingr",
@@ -2520,7 +2553,7 @@
     },
     "posterior": {
       "Package": "posterior",
-      "Version": "1.4.1",
+      "Version": "1.6.1",
       "Source": "Repository",
       "Repository": "CRAN",
       "Requirements": [
@@ -2538,7 +2571,7 @@
         "tibble",
         "vctrs"
       ],
-      "Hash": "7be6f62ae6281e965f09ca8657a066b2"
+      "Hash": "6ce9d5bf852882c96029dfc35b46da2b"
     },
     "pracma": {
       "Package": "pracma",
@@ -2677,7 +2710,7 @@
     },
     "purrr": {
       "Package": "purrr",
-      "Version": "1.0.1",
+      "Version": "1.0.4",
       "Source": "Repository",
       "Repository": "CRAN",
       "Requirements": [
@@ -2688,7 +2721,7 @@
         "rlang",
         "vctrs"
       ],
-      "Hash": "d71c815267c640f17ddbf7f16144b4bb"
+      "Hash": "cc8b5d43f90551fa6df0a6be5d640a4f"
     },
     "quadprog": {
       "Package": "quadprog",
@@ -3262,16 +3295,20 @@
     },
     "stringr": {
       "Package": "stringr",
-      "Version": "1.4.0",
+      "Version": "1.5.1",
       "Source": "Repository",
       "Repository": "CRAN",
       "Requirements": [
         "R",
+        "cli",
         "glue",
+        "lifecycle",
         "magrittr",
-        "stringi"
+        "rlang",
+        "stringi",
+        "vctrs"
       ],
-      "Hash": "0759e6b6c0957edb1311028a49a35e76"
+      "Hash": "960e2ae9e09656611e0b8214ad543207"
     },
     "survival": {
       "Package": "survival",
@@ -3439,12 +3476,11 @@
     },
     "tibble": {
       "Package": "tibble",
-      "Version": "3.1.3",
+      "Version": "3.2.1",
       "Source": "Repository",
       "Repository": "CRAN",
       "Requirements": [
         "R",
-        "ellipsis",
         "fansi",
         "lifecycle",
         "magrittr",
@@ -3455,7 +3491,7 @@
         "utils",
         "vctrs"
       ],
-      "Hash": "038455513fde65e79c25e724e0c84ca2"
+      "Hash": "a84e2cc86d07289b3b6f5069df7a004c"
     },
     "tidybayes": {
       "Package": "tidybayes",
@@ -3483,40 +3519,42 @@
     },
     "tidyr": {
       "Package": "tidyr",
-      "Version": "1.1.3",
+      "Version": "1.3.1",
       "Source": "Repository",
       "Repository": "CRAN",
       "Requirements": [
         "R",
+        "cli",
         "cpp11",
         "dplyr",
-        "ellipsis",
         "glue",
         "lifecycle",
         "magrittr",
         "purrr",
         "rlang",
+        "stringr",
         "tibble",
         "tidyselect",
         "utils",
         "vctrs"
       ],
-      "Hash": "450d7dfaedde58e28586b854eeece4fa"
+      "Hash": "915fb7ce036c22a6a33b5a8adb712eb1"
     },
     "tidyselect": {
       "Package": "tidyselect",
-      "Version": "1.1.1",
+      "Version": "1.2.1",
       "Source": "Repository",
       "Repository": "CRAN",
       "Requirements": [
         "R",
-        "ellipsis",
+        "cli",
         "glue",
-        "purrr",
+        "lifecycle",
         "rlang",
-        "vctrs"
+        "vctrs",
+        "withr"
       ],
-      "Hash": "7243004a708d06d4716717fa1ff5b2fe"
+      "Hash": "829f27b9c4919c16b593794a6344d6c0"
     },
     "tidyverse": {
       "Package": "tidyverse",
