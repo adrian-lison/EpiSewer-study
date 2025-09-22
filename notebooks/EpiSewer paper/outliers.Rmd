@@ -22,7 +22,7 @@ setup_pipeline("_no_outliers")
 ```{r, include = FALSE}
 all_pipelines <- c("_no_outliers")
 for (selection_to_run in all_pipelines) {
-  run_pipeline(targets_proj_name = selection_to_run, submit = T)
+  run_pipeline(targets_proj_name = selection_to_run, submit = TRUE)
   if(length(tar_read(jobs_EpiSewer_invalid))>0) {
     warning("There are invalid jobs.")
   }
@@ -41,6 +41,7 @@ rbindlist(lapply(all_pipelines, function(pipeline) {
 }))
 ```
 
+
 ## Load results
 ```{r}
 job_EpiSewer_result_no_outliers <- load_EpiSewer_results("_no_outliers")
@@ -53,6 +54,7 @@ data_PCR_agg_select_outliers <- get_data_PCR_agg_select("_overview_23-24")
 data_flow_select_outliers <- get_data_flow_select("_overview_23-24")
 ```
 
+Build index
 ```{r}
 results_index_no_outliers <- bind_rows(lapply(job_EpiSewer_result_no_outliers, function(x) {
   if (length(x) == 0) { data.frame(wwtp = NA, target = NA, estimation_date = NA)
@@ -132,10 +134,3 @@ print(combined_plot)
 ggsave(plot = combined_plot, file = here::here("figures", "outliers", paste0("outliers_", selection$wwtp_select, "_", selection$target_select, ".pdf")), width = 10, height = 5)
 })
 ```
-## Pruning
-The following code can be used to clean the pipeline from unused objects
-
-```{r}
-tar_prune()
-```
-

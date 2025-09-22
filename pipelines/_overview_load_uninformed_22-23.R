@@ -17,7 +17,7 @@ tar_option_set(
     "dplyr", "tidyr", "readr", "EpiSewer",
     "data.table", "stringr", "targets", "ssh"),
   workspace_on_error = TRUE, controller = crew_controller_local(workers = 4)
-)
+  )
 
 # user settings
 dry_run <- readRDS(file.path(tar_path_store(), "settings/dry_run.rds"))
@@ -32,21 +32,22 @@ if (run_cluster) {
 selection_targets <- list(
   tar_target(
     wwtp_select,
-    c("ARA Werdhoelzli")
+    c("ARA Werdhoelzli", "STEP Aire", "CDA Lugano",
+      "ARA Chur", "ARA Altenrhein", "ARA Sensetal")
   ),
   tar_target(
     assay_select,
-    c("respv6")
+    c("respv4")
   ),
   tar_target(
     target_select,
-    c("SARS-N2", "RSV-N")
+    c("SARS-N2", "IAV-M", "RSV-N")
   ),
   tar_target(
     date_select,
     {
-      from = as.Date("2023-08-01")
-      to = as.Date("2024-07-31")
+      from = as.Date("2022-08-01")
+      to = as.Date("2023-07-31")
       mapply(
         function(from, to) c(from = from, to = to), from = from, to = to, SIMPLIFY = FALSE
       )
@@ -54,7 +55,7 @@ selection_targets <- list(
   ),
   tar_target(
     load_per_case_file,
-    here::here("data", "assumptions", "load_per_case_initial_2023.csv")
+    here::here("data", "assumptions", "load_per_case_detect_pop_2022.csv")
   ),
   tar_target(
     load_per_case_data,
@@ -63,34 +64,6 @@ selection_targets <- list(
 )
 
 source(here::here("pipelines", "_real_time_base_targets.R"))
-
-modeling_targets$shedding_target <- tar_target(
-  module_shedding,
-  list(
-    load_variation_0 = model_shedding(
-      incubation_dist = incubation_dist_assume(),
-      shedding_dist = shedding_dist_estimate(),
-      load_per_case = load_per_case_assume(),
-      load_variation = load_variation_none()
-    ),
-    load_variation_1 = model_shedding(
-      incubation_dist = incubation_dist_assume(),
-      shedding_dist = shedding_dist_estimate(),
-      load_per_case = load_per_case_assume(),
-      load_variation = load_variation_estimate(
-        cv_prior_mu = 1, cv_prior_sigma = 0
-      )
-    ),
-    load_variation_2 = model_shedding(
-      incubation_dist = incubation_dist_assume(),
-      shedding_dist = shedding_dist_estimate(),
-      load_per_case = load_per_case_assume(),
-      load_variation = load_variation_estimate(
-        cv_prior_mu = 2, cv_prior_sigma = 0
-      )
-    )
-  )
-)
 
 option_targets$results_opts_target <- tar_target(
   results_opts,

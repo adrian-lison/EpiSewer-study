@@ -19,13 +19,9 @@ source("code/local_config.R")
 
 Create pipeline folders if they do not exist
 ```{r}
-create_real_time_pipelines("_real_time_selection_targets_22-23") 
-all_pipelines <- paste0("_real_time_", names(all_selection_targets))
-```
-
-```{r}
-create_real_time_pipelines("_real_time_selection_targets_23-24") 
-all_pipelines <- paste0("_real_time_", names(all_selection_targets))
+create_real_time_pipelines("_real_time_selection_targets_22-23")
+create_real_time_pipelines("_real_time_selection_targets_23-24")
+create_real_time_pipelines("_real_time_selection_targets_24-25") 
 ```
 
 ## Run pipelines
@@ -36,7 +32,19 @@ all_pipelines <- paste0("_real_time_", names(all_selection_targets))
 print(paste("Running", length(names(all_selection_targets)), "pipelines"))
 
 for (selection_to_run in all_pipelines) {
-  run_pipeline(targets_proj_name = selection_to_run, submit = T)
+  run_pipeline(targets_proj_name = selection_to_run, submit = TRUE)
+  if(length(tar_read(jobs_EpiSewer_invalid))>0) {
+    warning("There are invalid jobs.")
+  }
+}
+```
+```{r}
+create_real_time_pipelines("_real_time_selection_targets_23-24") 
+all_pipelines <- paste0("_real_time_", names(all_selection_targets))
+print(paste("Running", length(names(all_selection_targets)), "pipelines"))
+
+for (selection_to_run in all_pipelines) {
+  run_pipeline(targets_proj_name = selection_to_run, submit = TRUE)
   if(length(tar_read(jobs_EpiSewer_invalid))>0) {
     warning("There are invalid jobs.")
   }
@@ -44,12 +52,12 @@ for (selection_to_run in all_pipelines) {
 ```
 
 ```{r}
-create_real_time_pipelines("_real_time_selection_targets_23-24") 
+create_real_time_pipelines("_real_time_selection_targets_24-25") 
 all_pipelines <- paste0("_real_time_", names(all_selection_targets))
 print(paste("Running", length(names(all_selection_targets)), "pipelines"))
 
 for (selection_to_run in all_pipelines) {
-  run_pipeline(targets_proj_name = selection_to_run, submit = T)
+  run_pipeline(targets_proj_name = selection_to_run, submit = TRUE)
   if(length(tar_read(jobs_EpiSewer_invalid))>0) {
     warning("There are invalid jobs.")
   }
@@ -58,7 +66,7 @@ for (selection_to_run in all_pipelines) {
 
 Check all results
 ```{r}
-all_pipelines <- purrr::list_c(lapply(c("_real_time_selection_targets_22-23","_real_time_selection_targets_23-24"), function(x) {
+all_pipelines <- purrr::list_c(lapply(c("_real_time_selection_targets_22-23","_real_time_selection_targets_23-24","_real_time_selection_targets_24-25"), function(x) {
   source(paste0("pipelines/", x, ".R"))
   paste0("_real_time_", names(all_selection_targets))
 }))
@@ -69,15 +77,15 @@ rbindlist(lapply(all_pipelines, function(pipeline) {
   suppressMessages(setup_pipeline(pipeline))
   return(tar_read(job_EpiSewer_submission) |>
     mutate(total = 1, .before = exists) |>
-    summarise(across(total:submitted, sum, na.rm = T)) |> 
+    summarise(across(total:submitted, \(x) sum(x, na.rm = T))) |> 
     mutate(pipeline = pipeline, .before = total)
     )
-}))
+}), fill = TRUE)
 ```
 
 ## Load results
 ```{r}
-all_pipelines <- purrr::list_c(lapply(c("_real_time_selection_targets_22-23","_real_time_selection_targets_23-24"), function(x) {
+all_pipelines <- purrr::list_c(lapply(c("_real_time_selection_targets_22-23","_real_time_selection_targets_23-24","_real_time_selection_targets_24-25"), function(x) {
   source(paste0("pipelines/", x, ".R"))
   paste0("_real_time_", names(all_selection_targets))
 }))
@@ -89,13 +97,15 @@ data_PCR_agg_select <- get_data_PCR_agg_select(all_pipelines)
 data_flow_select <- get_data_flow_select(all_pipelines)
 ```
 
+Build index
 ```{r}
 get_season <- function(date) {
   if (date > as.Date("2022-08-01") & date <= as.Date("2023-08-01")) {
     return("2022/23")
-  }
-  else if (date > as.Date("2023-08-01") & date <= as.Date("2024-08-01")) {
+  } else if (date > as.Date("2023-08-01") & date <= as.Date("2024-08-01")) {
     return("2023/24")
+  } else if (date > as.Date("2024-08-01") & date <= as.Date("2025-08-01")) {
+    return("2024/25")
   } else {
     return("unknown")
   }
@@ -147,20 +157,22 @@ In the following, the season and wwtps for which to compute performance scores a
 wwtps_select <- c("Zurich" = "ARA Werdhoelzli", "Lugano" = "CDA Lugano", "Chur" = "ARA Chur")
 season_select <- "2023/24"
 selection <- list(
-  list(wwtp_select = wwtps_select[1], target_select = "SARS-N2", season_select = season_select, R_model_select = "R_splines"),
-  list(wwtp_select = wwtps_select[1], target_select = "IAV-M", season_select = season_select, R_model_select = "R_splines"),
-  list(wwtp_select = wwtps_select[1], target_select = "RSV-N", season_select = season_select, R_model_select = "R_splines"),
-  list(wwtp_select = wwtps_select[2], target_select = "SARS-N2", season_select = season_select, R_model_select = "R_splines"),
-  list(wwtp_select = wwtps_select[2], target_select = "IAV-M", season_select = season_select, R_model_select = "R_splines"),
-  list(wwtp_select = wwtps_select[2], target_select = "RSV-N", season_select = season_select, R_model_select = "R_splines"),
-  list(wwtp_select = wwtps_select[3], target_select = "SARS-N2", season_select = season_select, R_model_select = "R_splines"),
-  list(wwtp_select = wwtps_select[3], target_select = "IAV-M", season_select = season_select, R_model_select = "R_splines"),
-  list(wwtp_select = wwtps_select[3], target_select = "RSV-N", season_select = season_select, R_model_select = "R_splines")
+  list(wwtp_select = wwtps_select[1], target_select = "SARS-N2", season_select = season_select, R_model_select = "R_gp"),
+  list(wwtp_select = wwtps_select[1], target_select = "IAV-M", season_select = season_select, R_model_select = "R_gp"),
+  list(wwtp_select = wwtps_select[1], target_select = "RSV-N", season_select = season_select, R_model_select = "R_gp"),
+  list(wwtp_select = wwtps_select[2], target_select = "SARS-N2", season_select = season_select, R_model_select = "R_gp"),
+  list(wwtp_select = wwtps_select[2], target_select = "IAV-M", season_select = season_select, R_model_select = "R_gp"),
+  list(wwtp_select = wwtps_select[2], target_select = "RSV-N", season_select = season_select, R_model_select = "R_gp"),
+  list(wwtp_select = wwtps_select[3], target_select = "SARS-N2", season_select = season_select, R_model_select = "R_gp"),
+  list(wwtp_select = wwtps_select[3], target_select = "IAV-M", season_select = season_select, R_model_select = "R_gp"),
+  list(wwtp_select = wwtps_select[3], target_select = "RSV-N", season_select = season_select, R_model_select = "R_gp")
 )
 
 results_select_list <- lapply(selection, function(x) {
   res <- results_index |> filter(wwtp == x$wwtp_select, target == x$target_select, season == x$season_select, R_model == x$R_model_select)
-  stopifnot(nrow(res)>0)
+  if (nrow(res)==0) {
+    stop(x)
+  }
   res |> filter(estimation_date != max(estimation_date, na.rm = T))
 })
 
@@ -181,6 +193,7 @@ end_date_list <- lapply(baseline_select_list, function(baseline_select) {
   wave_dates |> filter(wwtp == baseline_select$wwtp[1], target == baseline_select$target[1], season == baseline_select$season[1]) |> pull(end_date)
 })
 ```
+
 ### Infection trends
 ```{r}
 infections_trend_list <- lapply(baseline_select_list, function(baseline_select) {
@@ -255,15 +268,15 @@ R_coverage <- rbindlist(lapply(1:length(baseline_select_list), function(i) {
 }))
 ```
 
-```{r}
-R_coverage_week <- R_coverage[, h_week := (-as.numeric(h) %/% 7)][h<=14 & h >= - 9*7, .(coverage = sum(coverage<0.95, na.rm = T)/sum(!is.na(coverage))), by = c("wwtp", "target", "h_week")]
+```{r fig.width = 3, fig.height = 5}
+R_coverage_week <- R_coverage[, h_week := (-as.numeric(h) %/% 7)][h<=14 & h >= -9*7, .(coverage = sum(coverage<0.95, na.rm = T)/sum(!is.na(coverage))), by = c("wwtp", "target", "h_week")]
 
 target_shedding_windows <- data.frame(
   target = as.character(unique(R_coverage_week$target))
 ) |> mutate(
   window_q90 = sapply(target, function(x) (which(cumsum(get_shedding_dist(x))>=0.9)[1]-1) + 0*(which(cumsum(get_generation_dist(x))>=0.9)[1])),
   window_q90_week = window_q90 / 7,
-  y = 0.85-c(0.05, 0.05, 0.05), angle = c(90, 90, 90), vjust = c(0, 0, 0), hjust = c(0, 0, 0),
+  y = 0.80-c(0.05, 0.05, 0.05), angle = c(90, 90, 90), vjust = c(0, 0, 0), hjust = c(0, 0, 0),
   target = factor(target, levels = c("SARS-N2", "IAV-M", "RSV-N"), labels = c("SARS-CoV-2", "IAV", "RSV"), ordered = T)
   )
 
@@ -278,7 +291,7 @@ consistency_plot <- R_coverage_week |>
   geom_vline(xintercept = 0, linetype = "solid", color = "grey") +
   geom_vline(data = target_shedding_windows, aes(xintercept = window_q90_week, color = target), linetype = "dashed", show.legend = FALSE) +
   geom_text(data = target_shedding_windows |> mutate(wwtp := factor("ARA Chur", levels = wwtps_select, labels = names(wwtps_select), ordered = T)), aes(x = window_q90_week, color = target, label = paste(target), y = y, angle = angle, vjust = vjust, hjust = hjust),
-           size = 2.5, nudge_x = -0.05, nudge_y = 0.02, show.legend = FALSE
+           size = 2.5, nudge_x = -0.08, nudge_y = 0.02, show.legend = FALSE
             ) +
   geom_line(aes(y=coverage, color = target)) +
   geom_point(aes(y=coverage, color = target)) +
@@ -292,14 +305,81 @@ consistency_plot <- R_coverage_week |>
   xlab("Real-time lag [weeks]") + 
   ylab(expression(Retrospective~R[t]~coverage)) +
   scale_y_continuous(labels = scales::percent_format(accuracy = 1), expand = expansion(add = c(0.04, 0.01))) +
-  scale_x_reverse(breaks = seq(-2,20), expand = expansion(add = c(0, 0.2))) +
-  coord_cartesian(ylim = c(0.85, 1), xlim = c(8.5, -1.5)) +
+  scale_x_reverse(breaks = seq(-2,20), expand = expansion(add = c(0, 0.2))) + xlim(c(9,-0.1)) +
+  coord_cartesian(ylim = c(0.80, 1), xlim = c(8.4, -0.1)) +
   scale_color_manual(name = "Pathogen", values = palette_targets) +
   guides(color = guide_legend())
 consistency_plot
 ```
 
+### Real-time error of median Rt
 
+```{r}
+R_real_time_error_list <- get_R_median_error_real_time_list(results_select_list, baseline_select_list)
+```
+
+```{r}
+R_median_error <- rbindlist(lapply(1:length(baseline_select_list), function(i) {
+  results_select <- results_select_list[[i]]
+  baseline_select <- baseline_select_list[[i]]
+  return(R_real_time_error_list[[i]][
+      date >= start_date_list[[i]] & 
+      estimation_date > start_date_list[[i]] &
+      date <= end_date_list[[i]], 
+    .(
+      wwtp = baseline_select$wwtp,
+      target = baseline_select$target,
+      MAE = mean(abs(median_error))
+    ), 
+    by = "h"])
+}))
+```
+
+```{r fig.width = 5, fig.height = 3}
+R_median_error_week <- R_median_error[, h_week := (-as.numeric(h) %/% 7)][h<=14 & h >= -9*7, .(MAE = mean(MAE, na.rm = T)), by = c("wwtp", "target", "h_week")]
+
+target_shedding_windows <- data.frame(
+  target = as.character(unique(R_median_error_week$target))
+) |> mutate(
+  window_q90 = sapply(target, function(x) (which(cumsum(get_shedding_dist(x))>=0.9)[1]-1) + 0*(which(cumsum(get_generation_dist(x))>=0.9)[1])),
+  window_q90_week = window_q90 / 7,
+  y = 0.35-c(0.05, 0.05, 0.05), angle = c(90, 90, 90), vjust = c(0, 0, 0), hjust = c(1, 1, 1),
+  target = factor(target, levels = c("SARS-N2", "IAV-M", "RSV-N"), labels = c("SARS-CoV-2", "IAV", "RSV"), ordered = T)
+  )
+
+R_median_error_week[
+  , target := factor(target, levels = c("SARS-N2", "IAV-M", "RSV-N"), labels = c("SARS-CoV-2", "IAV", "RSV"), ordered = T)
+  ][
+  , wwtp := factor(wwtp, levels = wwtps_select, labels = names(wwtps_select), ordered = T)
+  ]
+
+median_error_plot <- R_median_error_week |> 
+  ggplot(aes(x=h_week)) +
+  geom_vline(xintercept = 0, linetype = "solid", color = "grey") +
+  geom_vline(data = target_shedding_windows, aes(xintercept = window_q90_week, color = target), linetype = "dashed", show.legend = FALSE) +
+  geom_text(data = target_shedding_windows |> mutate(wwtp := factor("ARA Werdhoelzli", levels = wwtps_select, labels = names(wwtps_select), ordered = T)), aes(x = window_q90_week, color = target, label = paste(target), y = y, angle = angle, vjust = vjust, hjust = hjust),
+           size = 2.5, nudge_x = -0.08, nudge_y = 0.02, show.legend = FALSE
+            ) +
+  geom_line(aes(y=MAE, color = target)) +
+  geom_point(aes(y=MAE, color = target)) +
+  theme_bw() +
+  facet_grid(. ~ wwtp) +
+  theme(
+    legend.position = "top",
+    strip.background = element_rect(fill = "white"),
+    panel.grid.minor = element_blank(),
+    legend.title = element_blank()
+    ) +
+  xlab("Real-time lag [weeks]") + 
+  ylab(expression(Retrospective~MAE~of~median~R[t])) +
+  scale_x_reverse(breaks = seq(-2,20), expand = expansion(add = c(0, 0.2))) + xlim(c(9,-0.1)) +
+  coord_cartesian(ylim = c(NA, NA), xlim = c(8.4, -0.1)) +
+  scale_color_manual(name = "Pathogen", values = palette_targets) +
+  guides(color = guide_legend())
+median_error_plot
+
+ggsave(median_error_plot, filename = here::here("figures", "real_time", paste0("MAE_Rt_median_",stringr::str_replace(season_select,"/","-"),".pdf")), width = 10, height = 3)
+```
 ### Forecast performance 
 
 #### Preparation
@@ -326,6 +406,7 @@ ground_truth_list <- mapply(function(baseline_select, detected_outliers_df) {
 all_forecasts_list <- get_forecasts_list(results_select_list, baseline_select_list, ground_truth_list)
 all_baseline_list <- get_baseline_list(baseline_select_list, ground_truth_list, all_forecasts_list)
 ```
+
 ```{r}
 metrics_list <- list(
   "wis" = wis, 
@@ -341,19 +422,19 @@ conc_score_list <- lapply(all_forecasts_list, function(all_forecasts) score(all_
 baseline_score_list <- lapply(all_baseline_list, function(all_baseline) score(all_baseline, metrics = metrics_list))
 ```
 
-#### Bias
+#### Forecast bias
 
 Infections increasing vs decreasing
 ```{r}
 conc_score_total_agg_list <- lapply(1:length(conc_score_list), function(i) {
   start_date <- start_date_list[[i]]
   end_date <- end_date_list[[i]]
-  conc_score_agg <- merge(conc_score_list[[i]], infections_trend_list[[i]], by = c("wwtp","target","date"))
+  conc_score_agg <- merge(conc_score_list[[i]], infections_trend_list[[i]], by.x = c("wwtp","target","estimation_date"), by.y = c("wwtp","target","date"))
   return(conc_score_agg[
     estimation_date >= (start_date) & estimation_date <= (end_date) & h <= horizon_selection,
     .(bias = mean(bias, na.rm = T)),
-    by = c("wwtp","target","infection_trend_type")
-    ])
+    by = c("wwtp","target","infection_trend_type","estimation_date")
+    ][,.(bias = mean(bias, na.rm = T)),by = c("wwtp","target","infection_trend_type")])
 })
 
 bias_plot_data <- rbindlist(conc_score_total_agg_list)[
@@ -390,7 +471,7 @@ bias_plot <- bias_plot_data |>
     axis.ticks.y = element_blank(),
     panel.grid.major.y = element_blank()
     ) +
-  xlab("Bias score") + ylab(" ") +
+  xlab("Forecast bias") + ylab(" ") +
   guides(shape = guide_legend(), color = guide_none())
 
 bias_plot
@@ -404,14 +485,14 @@ coverage_data <- rbindlist(lapply(1:length(all_forecasts_list), function(i) {
   all_forecasts <- all_forecasts[quantile_level %in% c(0.005, round(seq(0, 1, by = 0.05),3), 0.995),]
   start_date <- start_date_list[[i]]
   end_date <- end_date_list[[i]]
-  get_coverage(
+  tryCatch(get_coverage(
   all_forecasts[h <= horizon_selection & estimation_date >= start_date & estimation_date <= end_date 
                   ,][
   , target := factor(target, levels = c("SARS-N2", "IAV-M", "RSV-N"), labels = c("SARS-CoV-2", "IAV", "RSV"), ordered = T)
   ][
   , wwtp := factor(wwtp, levels = wwtps_select, labels = names(wwtps_select), ordered = T)
   ], by = c("wwtp", "target")
-  )}
+  ), error = function(e) return(data.table()))}
 ))
 
 coverage_plot <- ggplot(coverage_data, aes(x = interval_range, y = interval_coverage*100, color = target)) +
@@ -432,7 +513,7 @@ coverage_plot <- ggplot(coverage_data, aes(x = interval_range, y = interval_cove
   scale_color_manual(name="Pathogen", values = palette_targets) +
   scale_y_continuous(labels = scales::label_percent(accuracy = 1, scale = 1)) +
   scale_x_continuous(labels = scales::label_percent(accuracy = 1, scale = 1)) +
-  ylab("% of observations contained") + xlab("Forecast interval") +
+  ylab("% of observations covered") + xlab("Forecast interval") +
   coord_cartesian(expand = FALSE, ylim = c(-5,105))
 
 coverage_plot
@@ -457,7 +538,7 @@ dates_show <- results_select_list[[example_i]] |>
   slice_min(estimation_date) |> 
   pull(estimation_date)
 
-dates_show <- as.Date(c("2023-12-01","2024-01-12","2024-02-21"))
+dates_show <- as.Date(c("2023-11-26","2024-01-02","2024-02-11"))
 
 res <- job_EpiSewer_result[results_select_list[[example_i]] |> filter(estimation_date %in% dates_show) |> pull(i)]
 names(res) <- paste0(format(dates_show, "%d %b, %Y"), ", Zurich")
@@ -468,6 +549,7 @@ conc_plot <- plot_concentration(
   flows = base_flow,
   concentration_col = "gc_per_mlww",
   normalized = TRUE,
+  median = TRUE,
   date_margin_right = 300,
   facet_model = T,
   facet_direction = "cols",
@@ -476,25 +558,43 @@ conc_plot <- plot_concentration(
   coord_cartesian(ylim = c(0,75), xlim = as.Date(c("2023-10-20", "2024-03-15"))) +
   scale_color_manual(values = rep("#E18727FF", 3)) +
   scale_fill_manual(values = rep("#E18727FF", 3)) +
-  scale_x_date(date_breaks = "1 months", date_labels = "%m/%y") +
+  scale_x_date(date_breaks = "1 months", date_labels = "%b '%y") +
   theme(
     axis.title.x = element_blank(),
     axis.text.x = element_blank(),
     axis.ticks.x = element_blank()
   ) +
-  ylab(expression(C[t]^plain("norm")~plain("[gc/mL]")))
+  ylab(expression(C[t]^plain("norm")~plain("[gc/mL]"))) +
+  geom_text(
+    data = data.frame(
+      date=as.Date(c("2023-10-26", "2024-02-01","2024-02-23")),
+      y = c(40, 65, 50),
+      text = c("Outlier", "Peak\nin infections", "Decline"),
+      model = forcats::fct_inorder(c("26 Nov, 2023, Zurich", "02 Jan, 2024, Zurich", "11 Feb, 2024, Zurich"))
+      ), aes(x=date, y=y, label=text), size = 3, color = "red", hjust = 0, lineheight = 0.9) +
+  geom_segment(
+    data = data.frame(
+      x = as.Date(c("2023-11-08", "2024-01-28", "2024-03-02")),
+      xend = as.Date(c("2023-11-21", "2024-01-12", "2024-02-19")),
+      y = c(50, 60, 40),
+      yend = c(75, 40, 20),
+      model = forcats::fct_inorder(c("26 Nov, 2023, Zurich", "02 Jan, 2024, Zurich", "11 Feb, 2024, Zurich"))
+      ), aes(x=x, xend=xend, y=y, yend=yend), color = "red", size = 0.5,
+    arrow = grid::arrow(length = grid::unit(0.05, "inches")))
+    
 
 R_plot <- plot_R(
   c(res, list(baseline = base_res)),
   date_margin_right = 300,
   facet_model = T,
+  median = TRUE,
   facet_direction = "cols",
   base_model = "baseline"
   ) + 
   coord_cartesian(ylim = c(0.6,1.8), xlim = as.Date(c("2023-10-20", "2024-03-15"))) +
   scale_color_manual(values = rep("#E18727FF", 3)) +
   scale_fill_manual(values = rep("#E18727FF", 3)) +
-  scale_x_date(date_breaks = "1 months", date_labels = "%m/%y") +
+  scale_x_date(date_breaks = "1 months", date_labels = "%b '%y") +
   theme(
     strip.background = element_blank(),
     strip.text = element_blank(),
@@ -529,23 +629,25 @@ if (season_select == "2023/24") {
     consistency_plot + theme(legend.position = "none"),
     bias_plot,
     coverage_plot + theme(legend.position = "none"),
-    nrow = 1, labels = c("B", "C", "D"), align = "h", axis = "tb", rel_widths = c(1, 0.9, 1)),
+    nrow = 1, labels = c("B", "C", "D"), align = "h",
+    axis = "tb", rel_widths = c(1, 0.9, 1)),
   ncol = 1, rel_heights = c(0.05, 0.4, 0.01, 0.61), align = "v"
 )
 combined_fig
   
   ggsave(combined_fig, filename = here::here("figures", "real_time", paste0("combined_performance_all_",stringr::str_replace(season_select,"/","-"),".pdf")), width = 10, height = 9, scale = 0.9)
-} else if (season_select == "2022/23") {
+} else if (season_select %in% c("2022/23", "2024/25")) {
   combined_fig <- cowplot::plot_grid(
   combined_legend,
   cowplot::plot_grid(
     consistency_plot + theme(legend.position = "none"),
     bias_plot,
     coverage_plot + theme(legend.position = "none"),
-    nrow = 1, labels = c("A", "B", "C"), align = "h", axis = "tb", rel_widths = c(1, 0.9, 1)),
+    nrow = 1, labels = c("A", "B", "C"), align = "h",
+    axis = "tb", rel_widths = c(1, 0.9, 1)),
   ncol = 1, rel_heights = c(0.09, 0.91), align = "v"
 )
-combined_fig
+  combined_fig
   
   ggsave(combined_fig, filename = here::here("figures", "real_time", paste0("combined_performance_all_",stringr::str_replace(season_select,"/","-"),".pdf")), width = 10, height = 6, scale = 0.9)
 }
@@ -627,36 +729,29 @@ diagnostics_theme_bp <- function(p) {
 
 #### Divergent transitions
 ```{r}
-diagnostics_theme_ts(
-  diagnostics_index |> filter(!is.na(target)) |> 
-    ggplot(aes(x = estimation_date, y = num_divergent/total_draws, color = target)) +
-    geom_hline(yintercept = 0.1, linetype = "dashed") +
-    scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
-    ylab("Divergent transitions") + 
-    coord_cartesian(ylim = c(0, 1))
-  )
-
 diagnostics_theme_bp(
   diagnostics_index |> filter(!is.na(target)) |> 
     ggplot(aes(x = season, y = num_divergent/total_draws, color = target)) +
     scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
     geom_boxplot() +
    ylab("Divergent transitions") +
-   coord_cartesian(ylim = c(0, 0.15))
+   coord_cartesian(ylim = c(0, 0.5))
 )
+
+diagnostics_theme_ts(
+  diagnostics_index |> filter(!is.na(target)) |> 
+    ggplot(aes(x = estimation_date, y = num_divergent/total_draws, color = target)) +
+    scale_y_continuous(labels = scales::percent_format(accuracy = 1), breaks = seq(0,0.6,0.2)) +
+    ylab("Divergent transitions") + 
+    coord_cartesian(ylim = c(0, 0.5))
+  )
+
 ggsave(here::here("figures", "real_time", "diagnostics_divergent_transitions.pdf"), width = 10, height = 5)
 ```
 
 #### EBFMI
 The EBFMI should be > 0.2 for all chains.
 ```{r}
-diagnostics_theme_ts(
-  diagnostics_index |> filter(!is.na(target)) |> 
-    ggplot(aes(x = estimation_date, y = min_ebfmi, color = target)) +
-    geom_hline(yintercept = 0.2, linetype = "dashed") +
-    ylab("Smallest E-BFMI")
-)
-
 diagnostics_theme_bp(
   diagnostics_index |> filter(!is.na(target)) |> 
     ggplot(aes(x = season, y = min_ebfmi, color = target)) +
@@ -664,6 +759,14 @@ diagnostics_theme_bp(
     geom_boxplot() +
    ylab("Smallest E-BFMI") 
 )
+
+diagnostics_theme_ts(
+  diagnostics_index |> filter(!is.na(target)) |> 
+    ggplot(aes(x = estimation_date, y = min_ebfmi, color = target)) +
+    geom_hline(yintercept = 0.2, linetype = "dashed") +
+    ylab("Smallest E-BFMI")
+)
+
 ggsave(here::here("figures", "real_time", "diagnostics_ebfmi.pdf"), width = 10, height = 5)
 ```
 
@@ -675,7 +778,7 @@ diagnostics_theme_ts(
     geom_hline(yintercept = 0.01, linetype = "dashed") +
     ylab("Maximum treedepth events") +
     scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
-    coord_cartesian(ylim = c(0, 1))
+    coord_cartesian(ylim = c(0, 0.05))
 )
 ```
 
@@ -692,18 +795,17 @@ diagnostics_theme_ts(
 
 diagnostics_theme_bp(
   diagnostics_index |> filter(!is.na(target)) |> 
-    ggplot(aes(x = season, y = mean_rhat, color = target)) +
-    geom_hline(yintercept = 1.05, linetype = "dashed") +
-    geom_boxplot() +
-    ylab("R-hat")
-)
-
-diagnostics_theme_bp(
-  diagnostics_index |> filter(!is.na(target)) |> 
     ggplot(aes(x = season, y = 1-share_rhat, color = target)) +
     scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
     geom_boxplot() +
     ylab("R-hat < 1.05")
+)
+
+diagnostics_theme_ts(
+  diagnostics_index |> filter(!is.na(target)) |> 
+    ggplot(aes(x = estimation_date, y = mean_rhat, color = target)) +
+    geom_hline(yintercept = 1.05, linetype = "dashed") +
+    ylab("R-hat") + coord_cartesian(ylim = c(NA, 1.14))
 )
 
 ggsave(here::here("figures", "real_time", "diagnostics_rhat.pdf"), width = 10, height = 5)
@@ -711,13 +813,6 @@ ggsave(here::here("figures", "real_time", "diagnostics_rhat.pdf"), width = 10, h
 
 #### Bulk ESS
 ```{r}
-diagnostics_theme_ts(
-  diagnostics_index |> filter(!is.na(target)) |> 
-    ggplot(aes(x = estimation_date, y = mean_ess_bulk, color = target)) +
-    ylab("Effective sample size (bulk)") +
-    geom_hline(yintercept = 400, linetype = "dashed")
-)
-
 diagnostics_theme_bp(
   diagnostics_index |> filter(!is.na(target)) |> 
     ggplot(aes(x = season, y = mean_ess_bulk, color = target)) +
@@ -725,18 +820,20 @@ diagnostics_theme_bp(
     geom_boxplot() +
     ylab("Effective sample size (bulk)")
 )
+
+diagnostics_theme_ts(
+  diagnostics_index |> filter(!is.na(target)) |> 
+    ggplot(aes(x = estimation_date, y = mean_ess_bulk, color = target)) +
+    ylab("Effective sample size (bulk)") +
+    geom_hline(yintercept = 400, linetype = "dashed") +
+    coord_cartesian(ylim = c(0, 6000))
+)
+
 ggsave(here::here("figures", "real_time", "diagnostics_ess_bulk.pdf"), width = 10, height = 5)
 ```
 
 #### Tail ESS
 ```{r}
-diagnostics_theme_ts(
-  diagnostics_index |> filter(!is.na(target)) |> 
-    ggplot(aes(x = estimation_date, y = mean_ess_tail, color = target)) +
-    ylab("Effective sample size (tail)") +
-    geom_hline(yintercept = 400, linetype = "dashed")
-)
-
 diagnostics_theme_bp(
   diagnostics_index |> filter(!is.na(target)) |> 
     ggplot(aes(x = season, y = mean_ess_tail, color = target)) +
@@ -744,17 +841,13 @@ diagnostics_theme_bp(
     geom_boxplot() +
     ylab("Effective sample size (tail)")
 )
+
+diagnostics_theme_ts(
+  diagnostics_index |> filter(!is.na(target)) |> 
+    ggplot(aes(x = estimation_date, y = mean_ess_tail, color = target)) +
+    ylab("Effective sample size (tail)") +
+    geom_hline(yintercept = 400, linetype = "dashed")
+)
+
 ggsave(here::here("figures", "real_time", "diagnostics_ess_tail.pdf"), width = 10, height = 5)
 ```
-
-## Pruning
-The following code can be used to clean the pipeline from unused objects
-
-```{r}
-for (pipeline in all_pipelines) {
-  setup_pipeline(pipeline)
-  tar_prune()
-  prune_results(approach = "EpiSewer", remove_all_jobfiles = TRUE, remove_all_outputs = TRUE)
-}
-```
-

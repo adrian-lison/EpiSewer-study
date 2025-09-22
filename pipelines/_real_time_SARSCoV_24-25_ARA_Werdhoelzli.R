@@ -1,8 +1,8 @@
 library(targets)
 library(tarchetypes)
 library(crew)
-source(here::here("pipelines", "_real_time_selection_targets_22-23.R"))
-selection_targets <- all_selection_targets[["SARSCoV_22-23_ARA_Werdhoelzli"]]
+source(here::here("pipelines", "_real_time_selection_targets_24-25.R"))
+selection_targets <- all_selection_targets[["SARSCoV_24-25_ARA_Werdhoelzli"]]
 tar_option_set(packages = c("dplyr", "tidyr", "readr", "EpiSewer", 
     "data.table", "stringr", "targets", "ssh"), workspace_on_error = TRUE, 
     controller = crew_controller_local(workers = 4))

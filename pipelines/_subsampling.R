@@ -15,7 +15,7 @@ source("code/pipeline/run_local_pipeline.R")
 tar_option_set(
   packages = c(
     "dplyr", "tidyr", "readr", "EpiSewer",
-    "data.table", "stringr", "targets"),
+    "data.table", "stringr", "targets", "ssh"),
   workspace_on_error = TRUE, controller = crew_controller_local(workers = 4)
 )
 
@@ -93,101 +93,49 @@ sensitivity_targets <- list(
   )
 )
 
-## subsampling ----
-source(here::here("pipelines", "_subsampling_weekdays_groups.R"))
-subsampling_targets <- subsampling_targets_group_werdhoelzli
-
 ## modeling modules ----
-modeling_targets <- list(
-  tar_target(
-    module_measurements,
-    list(
-      model_measurements(
-        concentrations = concentrations_observe(concentration_col = "gc_per_mlww"),
-        noise = noise_estimate_dPCR(
-          total_partitions_prior_mu = 20000,
-          total_partitions_prior_sigma = 5000,
-          partition_variation_prior_mu = 0,
-          partition_variation_prior_sigma = 0.05,
-          volume_scaled_prior_mu = 1.73e-5,
-          volume_scaled_prior_sigma = 0.05e-5,
-          prePCR_noise_type = "log-normal"
+source(here::here("pipelines", "_real_time_base_targets.R"))
+
+modeling_targets$infections_target = tar_target(
+  module_infections,
+  {
+    return(list(
+      R_gp = model_infections(
+        generation_dist = generation_dist_assume(),
+        R = R_estimate_gp(
+          length_scale_prior_mu = 7*3,
+          length_scale_prior_sigma = 7/2,
+          magnitude_prior_mu = 0.2,
+          magnitude_prior_sigma = 0.05,
+          long_length_scale_prior_mu = 7*4*3,
+          long_length_scale_prior_sigma = 7,
+          long_magnitude_prior_mu = 0.4,
+          long_magnitude_prior_sigma = 0.1,
+          matern_nu = 3/2,
         ),
-        LOD = LOD_estimate_dPCR()
-      )
-    )
-  ),
-  tar_target(
-    module_sampling,
-    list(
-      model_sampling(
-        sample_effects = sample_effects_none(),
-        outliers = outliers_estimate(
-          gev_prior_mu = 0, gev_prior_sigma = 2e-8, gev_prior_xi = 4
+        seeding = seeding_estimate_growth(extend = FALSE),
+        infection_noise =  infection_noise_estimate(
+          overdispersion = FALSE
         )
       )
-    )
-  ),
-  tar_target(
-    module_sewage,
-    list(
-      model_sewage(
-        flows = flows_observe(),
-        residence_dist = residence_dist_assume(residence_dist = c(1))
-      )
-    )
-  ),
-  tar_target(
-    module_shedding,
-    list(
-      model_shedding(
-        incubation_dist = incubation_dist_assume(),
-        shedding_dist = shedding_dist_estimate(),
-        load_per_case = load_per_case_assume(),
-        load_variation = load_variation_estimate(
-          cv_prior_mu = 1,
-          cv_prior_sigma = 0
-        )
-      )
-    )
-  ),
-  tar_target(
-    module_infections,
-    {
-      return(list(
-        R_splines = model_infections(
-          generation_dist = generation_dist_assume(),
-          R = R_estimate_splines(
-            knot_distance_global = 4*7,
-            knot_distance_local = 7,
-            R_start_prior_mu = 1,
-            R_start_prior_sigma = 0.8,
-            R_sd_local_prior_sd = 0.05,
-            R_sd_global_prior_shape = 1,
-            R_sd_global_prior_rate = 1e-2,
-            R_sd_global_change_distance = 4*7
-          ),
-          seeding = seeding_estimate_rw(extend = FALSE),
-          infection_noise =  infection_noise_estimate(
-            overdispersion = FALSE
-          )
-        )
-      ))
-    }
-  ),
-  tar_target(
+    ))
+  }
+)
+
+modeling_targets$forecast_target <- tar_target(
     module_forecast,
     list(
       model_forecast(
-        horizon = horizon_none()
+        horizon = horizon_none(),
+        damping = damping_none()
       )
     )
-  ),
-  tar_target(
+  )
+
+modeling_targets$data_handling_opts_target <- tar_target(
     data_handling_opts,
     list(list(aggregate_data = TRUE, remove_outliers = FALSE))
   )
-)
 
 ## sampling options ----
 ### sampler ----
@@ -209,11 +157,17 @@ option_targets <- list(
     results_opts,
     list(
       set_results_opts(
-        fitted = FALSE
+        fitted = FALSE,
+        summary_intervals = c(0.5, 0.95),
+        samples_ndraws = 1000
       )
     )
   )
 )
+
+## subsampling ----
+source(here::here("pipelines", "_subsampling_weekdays_groups.R"))
+subsampling_targets <- subsampling_targets_group_werdhoelzli
 
 ### run local vs euler ----
 if (run_cluster) {

@@ -37,9 +37,23 @@ subsampling_targets <- list(
     subsampling,
     list(
       list(
-        type = "Every day",
-        subtype = "Every day",
-        subsampling_f = function(dates) {rep(TRUE,length(dates))}
+        type = "3 days per week",
+        subtype = "(Monday|Tuesday)+(Wednesday|Thursday)+Friday",
+        subsampling_f = subsample_wdays_f(
+          list(c("Monday", "Tuesday"), c("Wednesday", "Thursday"), "Friday")
+        )
+      ),
+      list(
+        type = "1 day per week",
+        subtype = "Friday",
+        subsampling_f = subsample_wdays_f(list("Friday"))
+      ),
+      list(
+        type = "1 day per 2 weeks",
+        subtype = "Friday",
+        subsampling_f = function(dates) {
+          subsample_wdays_f(list("Friday"))(dates) & week_even(dates)
+        }
       )
     )
   )

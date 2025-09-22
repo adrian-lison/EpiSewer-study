@@ -1,0 +1,416 @@
+## Setup
+```{r setup, include = FALSE}
+knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
+```
+```{r}
+library(targets)
+library(dplyr)
+library(EpiSewer)
+library(ggplot2)
+library(ggpattern)
+library(data.table)
+library(scoringutils)
+source("code/pipeline/utils_pipeline.R")
+source("code/utils_postprocess.R")
+source("code/pipeline/utils_real_time.R")
+source("data/assumptions/epi_params_EpiSewer-study.R")
+source("code/local_config.R")
+```
+
+Create pipeline folders if they do not exist
+```{r}
+create_real_time_pipelines(
+  selection_targets_name = "_real_time_subsampling_selection_targets_23-24",
+  pipeline_group_name = "real_time_subsampling",
+  base_targets_script_path = "pipelines/_real_time_subsampling_base_targets.R"
+  )
+all_pipelines <- paste0("_real_time_subsampling_", names(all_selection_targets))
+```
+
+## Run pipelines
+```{r}
+create_real_time_pipelines(
+  selection_targets_name = "_real_time_subsampling_selection_targets_23-24",
+  pipeline_group_name = "real_time_subsampling",
+  base_targets_script_path = "pipelines/_real_time_subsampling_base_targets.R"
+  )
+all_pipelines <- paste0("_real_time_subsampling_", names(all_selection_targets))
+print(paste("Running", length(names(all_selection_targets)), "pipelines"))
+
+for (selection_to_run in all_pipelines) {
+  run_pipeline(targets_proj_name = selection_to_run, submit = F, run_cluster = T)
+  if(length(tar_read(jobs_EpiSewer_invalid))>0) {
+    warning("There are invalid jobs.")
+  }
+}
+```
+
+Check all results
+```{r}
+all_pipelines <- purrr::list_c(lapply(c("_real_time_subsampling_selection_targets_23-24"), function(x) {
+  source(paste0("pipelines/", x, ".R"))
+  paste0("_real_time_subsampling_", names(all_selection_targets))
+}))
+```
+
+```{r}
+rbindlist(lapply(all_pipelines, function(pipeline) {
+  suppressMessages(setup_pipeline(pipeline))
+  return(tar_read(job_EpiSewer_submission) |>
+    mutate(total = 1, .before = exists) |>
+    summarise(across(total:submitted, sum, na.rm = T)) |> 
+    mutate(pipeline = pipeline, .before = total)
+    )
+}))
+```
+
+## Load results
+
+```{r}
+all_pipelines_subsampled <- purrr::list_c(lapply(c("_real_time_subsampling_selection_targets_23-24"), function(x) {
+  source(paste0("pipelines/", x, ".R"))
+  paste0("_real_time_subsampling_", names(all_selection_targets))
+}))
+all_pipelines_full <- purrr::list_c(lapply(c("_real_time_selection_targets_23-24"), function(x) {
+  source(paste0("pipelines/", x, ".R"))
+  paste0("_real_time_", names(all_selection_targets))
+}))
+all_pipelines_full <- all_pipelines_full[stringr::str_detect(all_pipelines_full, "Werdhoelzli")]
+all_pipelines <- c(all_pipelines_subsampled, all_pipelines_full)
+
+job_EpiSewer_result <- load_EpiSewer_results(all_pipelines)
+data_PCR_agg_select <- get_data_PCR_agg_select(all_pipelines)
+data_flow_select <- get_data_flow_select(all_pipelines)
+```
+
+Build index
+```{r}
+get_season <- function(date) {
+  if (date > as.Date("2022-08-01") & date <= as.Date("2023-08-01")) {
+    return("2022/23")
+  } else if (date > as.Date("2023-08-01") & date <= as.Date("2024-08-01")) {
+    return("2023/24")
+  } else if (date > as.Date("2024-08-01") & date <= as.Date("2025-08-01")) {
+    return("2024/25")
+  } else {
+    return("unknown")
+  }
+}
+
+results_index <- bind_rows(lapply(job_EpiSewer_result, function(x) {
+  if (length(x) == 0) { data.frame(wwtp = NA, target = NA, estimation_date = NA, season = NA, R_model = NA)
+  } else {
+    return(data.frame(
+      wwtp = x$job$selection$wwtp,
+      target = x$job$selection$target,
+      estimation_date = lubridate::as_date(x$job$selection$date_select[[1]]["to"]),
+      season = sapply(lubridate::as_date(x$job$selection$date_select[[1]]["to"]), get_season),
+      R_model = x$job$selection$module_infections,
+      subsampling_type = x$job$selection$subsampling[[1]]$type,
+      subsampling_subtype = x$job$selection$subsampling[[1]]$subtype
+  ))}
+  }))
+rownames(results_index) <- NULL
+results_index$i <- 1:nrow(results_index)
+
+get_result_label <- function(x) {
+  paste(
+    x$summary$R[type == "estimate", max(date)],
+    x$job$selection$wwtp,
+    x$job$selection$target,
+    x$job$selection$season,
+    x$job$selection$subsampling[[1]]$type
+    )
+}
+
+get_result_label_minimal <- function(x) {
+  paste(
+    x$job$selection$wwtp,
+    x$job$selection$target,
+    paste("Estimation date:", x$summary$R[type == "estimate", max(date)]),
+    sep = " | "
+    )
+}
+```
+
+## Preparation
+
+```{r}
+palette_targets <- c("#BC3C29FF","#0072B5FF","#E18727FF")
+```
+
+### Select season
+In the following, the season and wwtps for which to compute performance scores are selected
+```{r}
+wwtps_select <- c("Zurich" = "ARA Werdhoelzli")
+season_select <- "2023/24"
+
+selection <- list(
+  # SARS-CoV-2
+  list(wwtp_select = wwtps_select[1], target_select = "SARS-N2", season_select = season_select, R_model_select = "R_gp", subsampling_type_select = "Every day"),
+  list(wwtp_select = wwtps_select[1], target_select = "SARS-N2", season_select = season_select, R_model_select = "R_gp", subsampling_type_select = "3 days per week"),
+  list(wwtp_select = wwtps_select[1], target_select = "SARS-N2", season_select = season_select, R_model_select = "R_gp", subsampling_type_select = "1 day per week"),
+  list(wwtp_select = wwtps_select[1], target_select = "SARS-N2", season_select = season_select, R_model_select = "R_gp", subsampling_type_select = "1 day per 2 weeks"),
+  # IAV
+  list(wwtp_select = wwtps_select[1], target_select = "IAV-M", season_select = season_select, R_model_select = "R_gp", subsampling_type_select = "Every day"),
+  list(wwtp_select = wwtps_select[1], target_select = "IAV-M", season_select = season_select, R_model_select = "R_gp", subsampling_type_select = "3 days per week"),
+  list(wwtp_select = wwtps_select[1], target_select = "IAV-M", season_select = season_select, R_model_select = "R_gp", subsampling_type_select = "1 day per week"),
+  list(wwtp_select = wwtps_select[1], target_select = "IAV-M", season_select = season_select, R_model_select = "R_gp", subsampling_type_select = "1 day per 2 weeks"),
+  # RSV
+  list(wwtp_select = wwtps_select[1], target_select = "RSV-N", season_select = season_select, R_model_select = "R_gp", subsampling_type_select = "Every day"),
+  list(wwtp_select = wwtps_select[1], target_select = "RSV-N", season_select = season_select, R_model_select = "R_gp", subsampling_type_select = "3 days per week"),
+  list(wwtp_select = wwtps_select[1], target_select = "RSV-N", season_select = season_select, R_model_select = "R_gp", subsampling_type_select = "1 day per week"),
+  list(wwtp_select = wwtps_select[1], target_select = "RSV-N", season_select = season_select, R_model_select = "R_gp", subsampling_type_select = "1 day per 2 weeks")
+)
+
+results_select_list <- lapply(selection, function(x) {
+  res <- results_index |> filter(wwtp == x$wwtp_select, target == x$target_select, season == x$season_select, R_model == x$R_model_select, subsampling_type == x$subsampling_type_select)
+  if (nrow(res)==0) {
+    stop(paste(x, collapse = ", "))
+  }
+  res |> filter(estimation_date != max(estimation_date, na.rm = T))
+})
+
+baseline_select_list <- lapply(selection, function(x) {
+  results_index |> filter(wwtp == x$wwtp_select, target == x$target_select, season == x$season_select, R_model == x$R_model_select, subsampling_type == "Every day") |> slice_max(estimation_date)
+})
+```
+
+### Load wave dates
+```{r}
+wave_dates <- readr::read_csv(here::here("data", "assumptions", "wave_dates.csv"))
+
+start_date_list <- lapply(baseline_select_list, function(baseline_select) {
+  wave_dates |> filter(wwtp == baseline_select$wwtp[1], target == baseline_select$target[1], season == baseline_select$season[1]) |> pull(start_date)
+})
+
+end_date_list <- lapply(baseline_select_list, function(baseline_select) {
+  wave_dates |> filter(wwtp == baseline_select$wwtp[1], target == baseline_select$target[1], season == baseline_select$season[1]) |> pull(end_date)
+})
+```
+
+### Infection trends
+```{r}
+infections_trend_list <- lapply(baseline_select_list, function(baseline_select) {
+  R_baseline <- job_EpiSewer_result[[baseline_select$i]]$summary$R[seeding == FALSE & type=="estimate",]
+  setorderv(R_baseline, cols = "date")
+  R_baseline[, R_value := median]
+  R_baseline[, infection_trend_type := ifelse(R_value > 1, "increasing", "decreasing")]
+  R_baseline[, wwtp := baseline_select$wwtp[1]]
+  R_baseline[, target := baseline_select$target[1]]
+  return(R_baseline[, c("wwtp", "target", "date", "R_value", "infection_trend_type")])
+})
+```
+
+```{r}
+rbindlist(infections_trend_list) |> 
+  filter(!is.na(R_value)) |> 
+  ggplot(aes(x=date, y=R_value)) + 
+  geom_hline(yintercept = 1, linetype = "dashed") +
+  geom_point(aes(color = infection_trend_type)) + 
+  scale_x_date(date_labels = "%m\n%y") +
+  facet_grid(wwtp~target, scales = "free_y") +
+  theme_bw() + theme(legend.position = "top")
+```
+
+## Results
+### Detected outliers
+```{r}
+detected_outliers <- lapply(baseline_select_list, function(baseline_select) {
+  if (nrow(baseline_select) == 0 || is.null(job_EpiSewer_result[[baseline_select$i]]$summary$outliers)) {
+    return(NULL)
+  }
+  outlier_df <- job_EpiSewer_result[[baseline_select$i]]$summary$outliers[epsilon > 1, "date"]
+  outlier_df[ , wwtp := baseline_select$wwtp[1]]
+  outlier_df[ , target := baseline_select$target[1]]
+  outlier_df[ , outlier_detected := TRUE]
+  data.table::setcolorder(outlier_df, c("wwtp", "target", "date", "outlier_detected"))
+  return(outlier_df)
+})
+```
+
+### Forecast performance 
+
+#### Preparation
+
+Forecast horizon to be evaluated
+```{r}
+horizon_selection <- 14
+```
+
+```{r}
+ground_truth_list <- mapply(function(baseline_select, detected_outliers_df) {
+  ground_truth <- merge(
+    data_PCR_agg_select[[baseline_select$i[1]]][, c("date", "gc_per_mlww")],
+    data_flow_select[[baseline_select$i[1]]][, c("date", "flow")]
+  )
+  ground_truth[, conc_normalized := gc_per_mlww * flow]
+  ground_truth <- ground_truth[!(date %in% detected_outliers_df[, date]),] # remove outliers from evaluation
+  return(ground_truth)
+}, baseline_select = baseline_select_list, detected_outliers_df = detected_outliers, SIMPLIFY = FALSE)
+```
+
+```{r}
+# note that scoringutils will give an irrelevant warning that there is no model column in the data - the forecasts are correctly stratified
+all_forecasts_list <- get_forecasts_list(results_select_list, baseline_select_list, ground_truth_list)
+all_baseline_list <- get_baseline_list(baseline_select_list, ground_truth_list, all_forecasts_list)
+```
+
+```{r}
+metrics_list <- list(
+  "wis" = wis, 
+  "overprediction" = overprediction_quantile,
+  "underprediction" = underprediction_quantile,
+  "dispersion" = dispersion_quantile,
+  "bias" = bias_quantile,
+  "interval_coverage_50" = purrr::partial(interval_coverage, interval_range = 50),
+  "interval_coverage_90" = purrr::partial(interval_coverage, interval_range = 90),
+  "interval_coverage_deviation" = interval_coverage_deviation
+)
+conc_score_list <- lapply(all_forecasts_list, function(all_forecasts) score(all_forecasts, metrics = metrics_list))
+baseline_score_list <- lapply(all_baseline_list, function(all_baseline) score(all_baseline, metrics = metrics_list))
+```
+
+```{r}
+for (i in seq_along(all_forecasts_list)) {
+  temp <- copy(all_forecasts_list[[i]])
+  temp[, subsampling_type := results_select_list[[i]]$subsampling_type[1]]
+  all_forecasts_list[[i]] <- temp
+}
+
+for (i in seq_along(conc_score_list)) {
+  temp <- copy(conc_score_list[[i]])
+  temp[,subsampling_type := results_select_list[[i]]$subsampling_type[1]]
+  conc_score_list[[i]] <- temp
+}
+```
+
+#### Bias score
+
+Infections increasing vs decreasing
+```{r}
+conc_score_total_agg_list <- lapply(1:length(conc_score_list), function(i) {
+  start_date <- start_date_list[[i]]
+  end_date <- end_date_list[[i]]
+  conc_score_agg <- merge(conc_score_list[[i]], infections_trend_list[[i]], by.x = c("wwtp","target","estimation_date"), by.y = c("wwtp","target","date"))
+  return(conc_score_agg[
+    estimation_date >= (start_date) & estimation_date <= (end_date) & h <= horizon_selection,
+    .(bias = mean(bias, na.rm = T)),
+    by = c("wwtp","subsampling_type","target","infection_trend_type","estimation_date")
+    ][,.(bias = mean(bias, na.rm = T)),by = c("wwtp","subsampling_type","target","infection_trend_type")])
+})
+
+bias_plot_data <- rbindlist(conc_score_total_agg_list)[
+  , target := factor(target, levels = c("SARS-N2", "IAV-M", "RSV-N"), labels = c("SARS-CoV-2", "IAV", "RSV"), ordered = T)
+  ][
+  , wwtp := factor(wwtp, levels = wwtps_select, labels = names(wwtps_select), ordered = T)
+  ][
+  , infection_trend_type := factor(infection_trend_type, levels = c("increasing", "decreasing"))
+  ][
+  , subsampling_type := factor(subsampling_type, levels = c("Every day", "3 days per week", "1 day per week", "1 day per 2 weeks"))
+  ]
+
+bias_plot_data <- bias_plot_data[subsampling_type!="Every day",]
+
+bias_plot_data[, wwtp := factor(wwtp)]
+bias_plot_data[, target := factor(target)]
+bias_plot_data[, infection_trend_type := factor(infection_trend_type)]
+bias_plot_data[, subsampling_type := factor(subsampling_type)]
+bias_plot_data[, nudge_y := -(as.numeric(infection_trend_type)+2*(as.numeric(target)-1)-(6/2+0.5))*0.15]
+
+bias_plot <- bias_plot_data |> 
+  ggplot(aes(x=bias, y=1)) +
+  geom_vline(xintercept = 0, linetype = "dashed") + 
+  geom_point(aes(shape = infection_trend_type, color = target), size = 3, position = position_nudge(y = bias_plot_data$nudge_y)) +
+  coord_cartesian(xlim = c(-1,1)) +
+  facet_grid(. ~ subsampling_type, scales = "free_y") +
+  scale_color_manual(name = "Pathogen", values = palette_targets) +
+  scale_shape_manual(name = "Infection trend", values = c(17, 19)) +
+  scale_y_continuous(expand = expansion(add = c(0.1, 0.1)), breaks = NULL, labels = NULL) +
+  theme_bw() +
+  theme(
+    legend.position = "inside",
+    legend.position.inside = c(0.01, 0.99),
+    legend.justification = c("left", "top"),
+    legend.background = element_blank(),
+    legend.title = element_text(size = 7),
+    legend.text = element_text(size = 7),
+    strip.background = element_rect(fill = "white"),
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank(),
+    panel.grid.major.y = element_blank()
+    ) +
+  xlab("Forecast bias") + ylab(" ") +
+  guides(shape = guide_legend(), color = guide_none())
+
+bias_plot
+```
+#### Interval coverage
+
+```{r}
+coverage_data <- rbindlist(lapply(1:length(all_forecasts_list), function(i) {
+  all_forecasts <- all_forecasts_list[[i]]
+  all_forecasts <- all_forecasts[quantile_level %in% c(0.005, round(seq(0, 1, by = 0.05),3), 0.995),]
+  start_date <- start_date_list[[i]]
+  end_date <- end_date_list[[i]]
+  tryCatch(get_coverage(
+  all_forecasts[h <= horizon_selection & estimation_date >= start_date & estimation_date <= end_date 
+                  ,][
+  , target := factor(target, levels = c("SARS-N2", "IAV-M", "RSV-N"), labels = c("SARS-CoV-2", "IAV", "RSV"), ordered = T)
+  ][
+  , wwtp := factor(wwtp, levels = wwtps_select, labels = names(wwtps_select), ordered = T)
+  ][
+  , subsampling_type := factor(subsampling_type, levels = c("Every day", "3 days per week", "1 day per week", "1 day per 2 weeks"))
+  ], by = c("wwtp", "subsampling_type", "target")
+  ), error = function(e) return(data.table()))}
+))
+coverage_data <- coverage_data[subsampling_type!="Every day",]
+
+rt_coverage_plot <- ggplot(coverage_data, aes(x = interval_range, y = interval_coverage*100, color = target)) +
+  geom_polygon(data = data.frame(x = c(0, 0, 100), y = c(0, 100, 100), g = c("o", "o", "o"), stringsAsFactors = TRUE),
+                 aes(x = x, y = y), alpha = 0.15,
+                 colour = "white", fill = "grey") +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "grey") +
+  geom_line(aes(group = target)) +
+  theme_bw() +
+  facet_grid(. ~ subsampling_type) +
+  theme(
+    legend.position = "top",
+    strip.background = element_rect(fill = "white"),
+    panel.grid.major = element_blank(), 
+    panel.grid.minor = element_blank()
+    ) +
+  scale_color_manual(name="Pathogen", values = palette_targets) +
+  scale_y_continuous(labels = scales::label_percent(accuracy = 1, scale = 1)) +
+  scale_x_continuous(labels = scales::label_percent(accuracy = 1, scale = 1)) +
+  ylab("% of obs. covered") + xlab("Forecast interval") +
+  coord_cartesian(expand = FALSE, ylim = c(-5,105))
+
+rt_coverage_plot
+```
+
+### Combined figure
+```{r fig.width = 10, fig.height = 9}
+if (!exists("example_subsampling_figure")) {
+  stop('Please run notebook "subsampling.R" first.')
+}
+
+combined_legend <- cowplot::plot_grid(
+  cowplot::get_plot_component(rt_coverage_plot, pattern = "guide-box-top"),
+  nrow = 1
+  )
+
+combined_fig <- cowplot::plot_grid(
+  combined_legend,
+  cowplot::plot_grid(
+    example_subsampling_figure,
+    bias_plot,
+    rt_coverage_plot + theme(legend.position = "none"),
+    ncol = 1, labels = c("A", "B", "C"), align = "v",
+    axis = "rl", rel_heights = c(2, 1, 1)
+    ), ncol = 1, rel_heights = c(0.05, 0.95),align = "v"
+)
+combined_fig
+  
+ggsave(here::here("figures", "subsampling", "Fig_subsampling_real_time_combined.pdf"), width = 10, height = 9, scale = 0.9)
+```

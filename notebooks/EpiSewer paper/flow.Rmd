@@ -15,7 +15,7 @@ source("code/local_config.R")
 Create pipeline folders if they do not exist
 ```{r}
 all_pipelines <- c("_flow_23-24_ARA_Werdhoelzli", "_flow_23-24_CDA_Lugano", "_flow_23-24_ARA_Chur")
-for (pipeline in names(all_selection_targets)) {
+for (pipeline in all_pipelines) {
   setup_pipeline(pipeline)
 }
 ```
@@ -25,7 +25,7 @@ for (pipeline in names(all_selection_targets)) {
 ```{r, include = FALSE}
 all_pipelines <- c("_flow_23-24_ARA_Werdhoelzli", "_flow_23-24_CDA_Lugano", "_flow_23-24_ARA_Chur")
 for (selection_to_run in all_pipelines) {
-  run_pipeline(targets_proj_name = selection_to_run, submit = T)
+  run_pipeline(targets_proj_name = selection_to_run, submit = TRUE)
   if(length(tar_read(jobs_EpiSewer_invalid))>0) {
     warning("There are invalid jobs.")
   }
@@ -52,6 +52,7 @@ data_PCR_agg_select <- get_data_PCR_agg_select(all_pipelines)
 data_flow_select <- get_data_flow_select(all_pipelines)
 ```
 
+Build index
 ```{r}
 results_index <- bind_rows(lapply(job_EpiSewer_result, function(x) {
   if (length(x) == 0) { data.frame(wwtp = NA, target = NA, estimation_date = NA)
@@ -72,8 +73,7 @@ results_index$i <- 1:nrow(results_index)
 ```{r}
 selection_list <- list(
   list(wwtp_select = "ARA Werdhoelzli", target_select = "SARS-N2", R_lim = c(0.8, 1.2)),
-  list(wwtp_select = "CDA Lugano", target_select = "SARS-N2", R_lim = c(0.7, 1.3)),
-  list(wwtp_select = "ARA Chur", target_select = "SARS-N2", R_lim = c(0.7, 1.3))
+  list(wwtp_select = "CDA Lugano", target_select = "SARS-N2", R_lim = c(0.7, 1.3))
 )
 ```
 
@@ -129,10 +129,5 @@ print(combined_plot)
 ggsave(plot = combined_plot, file = here::here("figures", "flow", paste0("flow_", selection$wwtp_select, "_", selection$target_select, ".pdf")), width = 10, height = 5)
 })
 ```
-## Pruning
-The following code can be used to clean the pipeline from unused objects
 
-```{r}
-tar_prune()
-```
 

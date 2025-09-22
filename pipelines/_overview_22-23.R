@@ -15,7 +15,7 @@ source("code/pipeline/run_local_pipeline.R")
 tar_option_set(
   packages = c(
     "dplyr", "tidyr", "readr", "EpiSewer",
-    "data.table", "stringr", "targets"),
+    "data.table", "stringr", "targets", "ssh"),
   workspace_on_error = TRUE, controller = crew_controller_local(workers = 4)
   )
 
@@ -64,31 +64,6 @@ selection_targets <- list(
 )
 
 source(here::here("pipelines", "_real_time_base_targets.R"))
-
-modeling_targets$infections_target = tar_target(
-  module_infections,
-  {
-    return(list(
-      R_splines = model_infections(
-        generation_dist = generation_dist_assume(),
-        R = R_estimate_splines(
-          knot_distance_global = 4*7,
-          knot_distance_local = 7,
-          R_start_prior_mu = 1,
-          R_start_prior_sigma = 0.8,
-          R_sd_local_prior_sd = 0.05,
-          R_sd_global_prior_shape = 1,
-          R_sd_global_prior_rate = 1e-2,
-          R_sd_global_change_distance = 4*7
-        ),
-        seeding = seeding_estimate_rw(extend = FALSE),
-        infection_noise =  infection_noise_estimate(
-          overdispersion = FALSE
-        )
-      )
-    ))
-  }
-)
 
 option_targets$results_opts_target <- tar_target(
   results_opts,

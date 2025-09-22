@@ -1,0 +1,245 @@
+## Setup
+
+```{r setup, include = FALSE}
+knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
+```
+```{r}
+library(targets)
+library(dplyr)
+library(EpiSewer)
+library(ggplot2)
+source("code/pipeline/utils_pipeline.R")
+source("code/pipeline/utils_real_time.R")
+source("data/assumptions/epi_params_EpiSewer-study.R")
+source("code/local_config.R")
+```
+
+Create pipeline folders if they do not exist
+```{r}
+setup_pipeline("_overview_load_uninformed_22-23")
+setup_pipeline("_overview_load_uninformed_23-24")
+setup_pipeline("_overview_load_uninformed_24-25")
+```
+
+## Run pipelines
+
+```{r, include = FALSE}
+run_pipeline(targets_proj_name = "_overview_load_uninformed_22-23", submit = TRUE)
+if(length(tar_read(jobs_EpiSewer_invalid))>0) {
+  warning("There are invalid jobs.")
+}
+```
+
+```{r, include = FALSE}
+run_pipeline(targets_proj_name = "_overview_load_uninformed_23-24", submit = TRUE)
+if(length(tar_read(jobs_EpiSewer_invalid))>0) {
+  warning("There are invalid jobs.")
+}
+```
+
+```{r, include = FALSE}
+run_pipeline(targets_proj_name = "_overview_load_uninformed_24-25", submit = TRUE)
+if(length(tar_read(jobs_EpiSewer_invalid))>0) {
+  warning("There are invalid jobs.")
+}
+```
+
+Check results
+```{r}
+rbindlist(lapply(c("_overview_load_uninformed_22-23", "_overview_load_uninformed_23-24", "_overview_load_uninformed_24-25"), function(pipeline) {
+  suppressMessages(setup_pipeline(pipeline))
+  return(tar_read(job_EpiSewer_submission) |>
+    mutate(total = 1, .before = exists) |>
+    summarise(across(total:submitted, \(x) sum(x, na.rm = TRUE))) |> 
+    mutate(pipeline = pipeline, .before = total)
+    )
+}))
+```
+
+## Load results
+
+```{r}
+all_pipelines_informed <- c("_overview_22-23", "_overview_23-24", "_overview_24-25")
+job_EpiSewer_result_informed <- load_EpiSewer_results(all_pipelines_informed)
+data_PCR_agg_select_informed <- get_data_PCR_agg_select(all_pipelines_informed)
+data_flow_select_informed <- get_data_flow_select(all_pipelines_informed)
+
+all_pipelines_uninformed <- c("_overview_load_uninformed_22-23", "_overview_load_uninformed_23-24", "_overview_load_uninformed_24-25")
+job_EpiSewer_result_uninformed <- load_EpiSewer_results(all_pipelines_uninformed)
+data_PCR_agg_select_uninformed <- get_data_PCR_agg_select(all_pipelines_uninformed)
+data_flow_select_uninformed <- get_data_flow_select(all_pipelines_uninformed)
+```
+Build index
+```{r}
+results_index_informed <- bind_rows(lapply(job_EpiSewer_result_uninformed, function(x) {
+  if (length(x) == 0) { data.frame(wwtp = NA, target = NA, estimation_date = NA)
+  } else {
+    return(data.frame(
+      wwtp = x$job$selection$wwtp,
+      target = x$job$selection$target,
+      estimation_date = lubridate::as_date(x$job$selection$date_select[[1]]["to"]),
+      season = case_when(
+        lubridate::as_date(x$job$selection$date_select[[1]]["to"])<"2023-08-01" ~ "2022/23",
+        lubridate::as_date(x$job$selection$date_select[[1]]["to"])<"2024-08-01" ~ "2023/24",
+        lubridate::as_date(x$job$selection$date_select[[1]]["to"])<"2025-08-01" ~ "2024/25",
+        TRUE ~ "Unknown"
+      )
+  ))}
+  }))
+rownames(results_index_informed) <- NULL
+results_index_informed$i_informed <- 1:nrow(results_index_informed)
+
+results_index_uninformed <- bind_rows(lapply(job_EpiSewer_result_uninformed, function(x) {
+  if (length(x) == 0) { data.frame(wwtp = NA, target = NA, estimation_date = NA)
+  } else {
+    return(data.frame(
+      wwtp = x$job$selection$wwtp,
+      target = x$job$selection$target,
+      estimation_date = lubridate::as_date(x$job$selection$date_select[[1]]["to"]),
+      season = case_when(
+        lubridate::as_date(x$job$selection$date_select[[1]]["to"])<"2023-08-01" ~ "2022/23",
+        lubridate::as_date(x$job$selection$date_select[[1]]["to"])<"2024-08-01" ~ "2023/24",
+        lubridate::as_date(x$job$selection$date_select[[1]]["to"])<"2025-08-01" ~ "2024/25",
+        TRUE ~ "Unknown"
+      )
+  ))}
+  }))
+rownames(results_index_uninformed) <- NULL
+results_index_uninformed$i_uninformed <- 1:nrow(results_index_uninformed)
+
+get_result_label <- function(x) {
+  paste(
+    x$summary$R[type == "estimate", max(date)],
+    x$job$selection$wwtp,
+    x$job$selection$target
+    )
+}
+
+results_index <- full_join(results_index_informed, results_index_uninformed)
+```
+
+
+## Plotting
+
+```{r}
+palette_targets <- c("SARS-N2" = "#BC3C29FF", "IAV-M" = "#0072B5FF", "RSV-N" = "#E18727FF")
+```
+
+WWTP sizes
+```{r}
+wwtp_info <- readr::read_csv(here::here("data", "data merging", "wwtp_info.csv"))
+```
+
+```{r fig.height = 6, fig.width = 6}
+wwtps_select <- c("ARA Werdhoelzli", "CDA Lugano", "ARA Chur")
+target_labels <- list(
+    `SARS-N2` = "SARS-CoV-2",
+    `IAV-M` = "IAV",
+    `RSV-N` = "RSV"
+  )
+season_plots <- list()
+
+for (season_select in unique(results_index$season)) {
+  target_plots <- list()
+  for (target_select in unique(results_index$target)) {
+    if (season_select == "2022/23") {
+    date_lim <- as.Date(c("2022-11-15", "2023-04-15"))
+    target_R_lim <- list(
+    `SARS-N2` = c(0.7, 1.3),
+    `IAV-M` = c(0.6, 1.6),
+    `RSV-N` = c(0.5, 1.7)
+  )
+    target_r_lim <- list(
+    `SARS-N2` = c(-0.12, 0.12),
+    `IAV-M` = c(-0.2, 0.2),
+    `RSV-N` = c(-0.12, 0.12)
+  )
+  target_R_breaks <- list(
+    `SARS-N2` = c(0.8, 1, 1.2),
+    `IAV-M` = c(0.6, 1, 1.4),
+    `RSV-N` = c(0.6, 1, 1.4)
+  )
+  } else if (season_select == "2023/24") {
+    date_lim <- as.Date(c("2023-08-30", "2024-04-15"))
+    target_R_lim <- list(
+    `SARS-N2` = c(0.7, 1.3),
+    `IAV-M` = c(0.6, 1.5),
+    `RSV-N` = c(0.6, 1.9)
+  )
+    target_r_lim <- list(
+    `SARS-N2` = c(-0.12, 0.12),
+    `IAV-M` = c(-0.15, 0.15),
+    `RSV-N` = c(-0.12, 0.12)
+  )
+  target_R_breaks <- list(
+    `SARS-N2` = c(0.8, 1, 1.2),
+    `IAV-M` = c(0.7, 1, 1.4),
+    `RSV-N` = c(1, 1.5)
+  )
+  } else if (season_select == "2024/25") {
+    date_lim <- as.Date(c("2024-08-30", "2025-04-15"))
+    target_R_lim <- list(
+    `SARS-N2` = c(0.7, 1.3),
+    `IAV-M` = c(0.6, 1.5),
+    `RSV-N` = c(0.6, 1.9)
+  )
+    target_r_lim <- list(
+    `SARS-N2` = c(-0.12, 0.12),
+    `IAV-M` = c(-0.15, 0.15),
+    `RSV-N` = c(-0.12, 0.12)
+  )
+  target_R_breaks <- list(
+    `SARS-N2` = c(0.8, 1, 1.2),
+    `IAV-M` = c(0.7, 1, 1.4),
+    `RSV-N` = c(1, 1.5)
+  )
+  }
+    
+  target_plots[[target_select]] <- cowplot::plot_grid(plotlist = apply(
+    results_index |> filter(season == season_select, target == target_select, wwtp %in% wwtps_select), 1, function(x) {
+      models <- list(
+        informed = job_EpiSewer_result_informed[[as.numeric(x["i_informed"])]],
+        uninformed = job_EpiSewer_result_uninformed[[as.numeric(x["i_uninformed"])]]
+      )
+      names(models) <- c("informed", target_labels[[target_select]]) # we will use the model name for the facet label
+      Rplot <-plot_R(models, base_model = "informed", forecast = FALSE, median = T, intervals = c(0.5, 0.95), seeding = TRUE) + 
+        scale_x_date(date_breaks = "2 months", date_labels = "%b '%y", expand = c(0,0)) +
+        coord_cartesian(xlim = date_lim, ylim = target_R_lim[[target_select]]) +
+        ylab(expression(R[t])) +
+        scale_color_manual(values = palette_targets[[target_select]]) +
+        scale_fill_manual(values = palette_targets[[target_select]]) +
+        scale_y_continuous(breaks = target_R_breaks[[target_select]]) +
+        theme(
+          legend.position = "none",
+          axis.title.x = element_blank(),
+          plot.title = element_text(size = 10),
+          plot.subtitle = element_text(size = 8),
+          axis.ticks = element_blank(),
+          panel.border = element_blank(),
+          strip.text.y = element_text(angle = -90),
+          strip.background = element_blank()
+          )
+  if (target_select == "SARS-N2") {
+    Rplot <- Rplot + ggtitle(x["wwtp"], subtitle = paste0(
+      "(", scales::number(wwtp_info[wwtp_info["name"] == x[["wwtp"]],][["population"]], big.mark = "'"), " pers.)"
+      ))
+  }
+  if (x[["wwtp"]] == wwtps_select[length(wwtps_select)]) {
+    Rplot <- Rplot + facet_grid(model ~ ., scales = "free_y")
+  }
+  if (x[["wwtp"]] != wwtps_select[1]) {
+    Rplot <- Rplot + theme(axis.title.y = element_blank(), axis.text.y = element_blank())
+  }
+  Rplot
+  }), nrow = 1, rel_widths = c(0.365, 0.295, 0.33))
+  }
+  season_plots[[season_select]] <- cowplot::plot_grid(plotlist = target_plots, ncol = 1, rel_heights = c(0.38, 0.31, 0.31))
+  ggsave(
+    plot = season_plots[[season_select]],
+    filename = here::here("figures", "load_uninformed", paste0("load_uninformed_", stringr::str_replace(season_select, "/", "-"), ".pdf")),
+    width = 10, height = 8, scale = 0.9
+  )
+}
+
+season_plots
+```
