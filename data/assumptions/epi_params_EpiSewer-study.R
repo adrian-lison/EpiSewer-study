@@ -140,7 +140,9 @@ get_load_per_case <- function(wwtp_select, target_select, multiplier = 1, load_p
                            `SARS-N2` = 1,
                            `IAV-M` = 1,
                            `IBV-M` = 1,
-                           `RSV-N` = 1)
+                           `RSV-N` = 1,
+                           `RSV-A` = 1,
+                           `RSV-B` = 1)
   
   sel <- load_per_case_data |> dplyr::filter(wwtp == wwtp_select, target == target_select)
   if (nrow(sel)==0) {

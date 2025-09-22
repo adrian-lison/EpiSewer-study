@@ -1,0 +1,2199 @@
+{
+  "source": "sentinella_reporting_system",
+  "sourceDate": "2025-06-03",
+  "version": "20250604",
+  "values": [
+    {
+      "x": 202010,
+      "y": 177627.8,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": null
+      }
+    },
+    {
+      "x": 202011,
+      "y": 182629.4,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": null
+      }
+    },
+    {
+      "x": 202012,
+      "y": 150879.8,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": null
+      }
+    },
+    {
+      "x": 202013,
+      "y": 128746.1,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": null
+      }
+    },
+    {
+      "x": 202014,
+      "y": 124795.2,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": null
+      }
+    },
+    {
+      "x": 202015,
+      "y": 111729.1,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202016,
+      "y": 108755.2,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202017,
+      "y": 143052.9,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202018,
+      "y": 144431.3,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202019,
+      "y": 161508.1,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202020,
+      "y": 167342.7,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202021,
+      "y": 134933.9,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202022,
+      "y": 188451.8,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202023,
+      "y": 153654.7,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202024,
+      "y": 187791.7,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202025,
+      "y": 194105,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202026,
+      "y": 192013.6,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202027,
+      "y": 188544,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202028,
+      "y": 186597.3,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202029,
+      "y": 181925.3,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202030,
+      "y": 183510.3,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202031,
+      "y": 236305,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202032,
+      "y": 172985.5,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202033,
+      "y": 169125.1,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202034,
+      "y": 178572.7,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202035,
+      "y": 180334.3,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202036,
+      "y": 184060.4,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202037,
+      "y": 180564.2,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202038,
+      "y": 189054.8,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202039,
+      "y": 176684.1,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202040,
+      "y": 175878,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202041,
+      "y": 162792.9,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202042,
+      "y": 177133.4,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202043,
+      "y": 180737.1,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202044,
+      "y": 181431.7,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202045,
+      "y": 178444.5,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202046,
+      "y": 178777.3,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202047,
+      "y": 176562.8,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202048,
+      "y": 169562.7,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202049,
+      "y": 170106,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202050,
+      "y": 167305.5,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202051,
+      "y": 181180.1,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202052,
+      "y": 229206.9,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202053,
+      "y": 207464.6,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202101,
+      "y": 248648,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202102,
+      "y": 178007.5,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202103,
+      "y": 175932,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202104,
+      "y": 177007.3,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202105,
+      "y": 179679.1,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202106,
+      "y": 163020.6,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202107,
+      "y": 171260.8,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202108,
+      "y": 179059.4,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202109,
+      "y": 189768.5,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202110,
+      "y": 191070.8,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202111,
+      "y": 177831.5,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202112,
+      "y": 193658,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202113,
+      "y": 179661.1,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202114,
+      "y": 151200.8,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202115,
+      "y": 197726.1,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202116,
+      "y": 226993.7,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202117,
+      "y": 215793.9,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202118,
+      "y": 223007.1,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202119,
+      "y": 179054.9,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202120,
+      "y": 210345,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202121,
+      "y": 185792.9,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202122,
+      "y": 220465.3,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202123,
+      "y": 218276.3,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202124,
+      "y": 223807.3,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202125,
+      "y": 211216.3,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202126,
+      "y": 191500.6,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202127,
+      "y": 196849.8,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202128,
+      "y": 192873.9,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202129,
+      "y": 192189.8,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202130,
+      "y": 189653.4,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202131,
+      "y": 232869,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202132,
+      "y": 204420.2,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202133,
+      "y": 221478.2,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202134,
+      "y": 199744.6,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202135,
+      "y": 194201.2,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202136,
+      "y": 197148.4,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202137,
+      "y": 213384.4,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202138,
+      "y": 211389.4,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202139,
+      "y": 202846.9,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202140,
+      "y": 197851,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202141,
+      "y": 191364.8,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202142,
+      "y": 203584.6,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202143,
+      "y": 198552.5,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202144,
+      "y": 202079.6,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202145,
+      "y": 200765.8,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202146,
+      "y": 206444.1,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202147,
+      "y": 206735.6,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202148,
+      "y": 210236.3,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202149,
+      "y": 214676.4,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202150,
+      "y": 216489.7,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202151,
+      "y": 148841.3,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202152,
+      "y": 184585.4,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202201,
+      "y": 264697,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202202,
+      "y": 203777.1,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202203,
+      "y": 190426.6,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202204,
+      "y": 197290,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202205,
+      "y": 186487.8,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202206,
+      "y": 188834.6,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202207,
+      "y": 192898.8,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202208,
+      "y": 178193.5,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202209,
+      "y": 177887.7,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202210,
+      "y": 198335.6,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202211,
+      "y": 196749.4,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202212,
+      "y": 199343.9,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202213,
+      "y": 225766.6,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202214,
+      "y": 221751.6,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202215,
+      "y": 172317,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202216,
+      "y": 139221.4,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202217,
+      "y": 199229,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202218,
+      "y": 207530.8,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202219,
+      "y": 201049.6,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202220,
+      "y": 208909.1,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202221,
+      "y": 168417.4,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202222,
+      "y": 200882,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202223,
+      "y": 166492.5,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202224,
+      "y": 200227.1,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202225,
+      "y": 208243.3,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202226,
+      "y": 193612.2,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202227,
+      "y": 176826.6,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202228,
+      "y": 175904.9,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202229,
+      "y": 205355.2,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202230,
+      "y": 207866,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202231,
+      "y": 203178.7,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202232,
+      "y": 215808.7,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202233,
+      "y": 211317.4,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202234,
+      "y": 197452.5,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202235,
+      "y": 191543.4,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202236,
+      "y": 191893,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202237,
+      "y": 200692.6,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202238,
+      "y": 194084.9,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202239,
+      "y": 183850.3,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202240,
+      "y": 176449,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202241,
+      "y": 190539.2,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202242,
+      "y": 197948.5,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202243,
+      "y": 200126.9,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202244,
+      "y": 198595.7,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202245,
+      "y": 196840.7,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202246,
+      "y": 208066.6,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202247,
+      "y": 211447.1,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202248,
+      "y": 214377.9,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202249,
+      "y": 199837.9,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202250,
+      "y": 214459.1,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202251,
+      "y": 204831.8,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202252,
+      "y": 183148.5,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202301,
+      "y": 197024.5,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202302,
+      "y": 195338.1,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202303,
+      "y": 182425,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202304,
+      "y": 176286.4,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202305,
+      "y": 188254.8,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202306,
+      "y": 183362,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202307,
+      "y": 190440.9,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202308,
+      "y": 185428.1,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202309,
+      "y": 182859.8,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202310,
+      "y": 210715.6,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202311,
+      "y": 188390.4,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202312,
+      "y": 187466.1,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202313,
+      "y": 199672.5,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202314,
+      "y": 175403.5,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202315,
+      "y": 139550.7,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202316,
+      "y": 199345,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202317,
+      "y": 209550.5,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202318,
+      "y": 194496.4,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202319,
+      "y": 205291.6,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202320,
+      "y": 147822.9,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202321,
+      "y": 187860.9,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202322,
+      "y": 172815,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202323,
+      "y": 197917.8,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202324,
+      "y": 206871.5,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202325,
+      "y": 190858.9,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202326,
+      "y": 184441,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202327,
+      "y": 187071.6,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202328,
+      "y": 186279.2,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202329,
+      "y": 185434.2,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202330,
+      "y": 182290,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202331,
+      "y": 168729.6,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202332,
+      "y": 192356.9,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202333,
+      "y": 201621.5,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202334,
+      "y": 205264.4,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202335,
+      "y": 195111.1,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202336,
+      "y": 196525.7,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202337,
+      "y": 189054,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202338,
+      "y": 195503.1,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202339,
+      "y": 192041.9,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202340,
+      "y": 179613.3,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202341,
+      "y": 186635.2,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202342,
+      "y": 199256.7,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202343,
+      "y": 192716.9,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202344,
+      "y": 194645.8,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202345,
+      "y": 187068.2,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202346,
+      "y": 195034.6,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202347,
+      "y": 195799.8,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202348,
+      "y": 190461.8,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202349,
+      "y": 190230.7,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202350,
+      "y": 202078.1,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202351,
+      "y": 189696.7,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202352,
+      "y": 137612,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202401,
+      "y": 148809.7,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202402,
+      "y": 190873.6,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202403,
+      "y": 184334.7,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202404,
+      "y": 187243.5,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202405,
+      "y": 192073.1,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202406,
+      "y": 181193,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202407,
+      "y": 176573,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202408,
+      "y": 178262.5,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202409,
+      "y": 194018.7,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202410,
+      "y": 195282.7,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202411,
+      "y": 187502.1,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202412,
+      "y": 187544,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202413,
+      "y": 175105.3,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202414,
+      "y": 147572.9,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202415,
+      "y": 185114.1,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202416,
+      "y": 214987.7,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202417,
+      "y": 201251.8,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202418,
+      "y": 187396.9,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202419,
+      "y": 156185.9,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202420,
+      "y": 197992.2,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202421,
+      "y": 179128.7,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202422,
+      "y": 192628.1,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202423,
+      "y": 201646.1,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202424,
+      "y": 199804.6,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202425,
+      "y": 185295.1,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202426,
+      "y": 192192.7,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202427,
+      "y": 182876.4,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202428,
+      "y": 193966.3,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202429,
+      "y": 192342.6,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202430,
+      "y": 197333.8,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202431,
+      "y": 166368,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202432,
+      "y": 200052.5,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202433,
+      "y": 208789.1,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202434,
+      "y": 199225.9,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202435,
+      "y": 193955,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202436,
+      "y": 204016.1,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202437,
+      "y": 197431.5,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202438,
+      "y": 187433,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202439,
+      "y": 188903.2,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202440,
+      "y": 184632.9,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202441,
+      "y": 185296.2,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202442,
+      "y": 183670.8,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202443,
+      "y": 177792.1,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202444,
+      "y": 185550.8,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202445,
+      "y": 188784.3,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202446,
+      "y": 186014.9,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202447,
+      "y": 193465.7,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202448,
+      "y": 189385,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202449,
+      "y": 187444.4,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202450,
+      "y": 189024.5,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202451,
+      "y": 190864.3,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202452,
+      "y": 123798,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202501,
+      "y": 95729.9,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202502,
+      "y": 210589,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202503,
+      "y": 216127.7,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202504,
+      "y": 215538,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "rising"
+      }
+    },
+    {
+      "x": 202505,
+      "y": 200156.6,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202506,
+      "y": 211433.2,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202507,
+      "y": 228842.9,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202508,
+      "y": 211150.8,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202509,
+      "y": 202162.2,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202510,
+      "y": 205410.8,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202511,
+      "y": 198371.6,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202512,
+      "y": 202811.2,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202513,
+      "y": 225597.2,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202514,
+      "y": 239320.2,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202515,
+      "y": 218059.4,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202516,
+      "y": 168940.6,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202517,
+      "y": 155941.4,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202518,
+      "y": 205645.5,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "falling"
+      }
+    },
+    {
+      "x": 202519,
+      "y": 215793.5,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202520,
+      "y": 212327,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202521,
+      "y": 210841.8,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    },
+    {
+      "x": 202522,
+      "y": 146279.8,
+      "properties": {
+        "dataComplete": "TRUE",
+        "trend": "stagnant"
+      }
+    }
+  ]
+}

@@ -1,0 +1,142 @@
+{
+  "metaVariables": {
+    "topic": "respiratory_pathogens",
+    "source": "national_reference_center_for_influenza",
+    "publishingDate": "2025-05-20",
+    "sourceDate": "2025-05-20",
+    "publicationFrequency": {
+      "frequency": "weekly",
+      "frequencyDescription": "-"
+    },
+    "valueCategory": {
+      "column": "valueCategory",
+      "columnDescription": "Defines what the property 'value' represents.",
+      "valueSet": ["detections", "samples"]
+    }
+  },
+  "temporalVariables": {
+    "column": "temporal",
+    "columnDescription": "Temporal information of the value specified in the property 'valueCategory'.",
+    "typeColumn": "temporal_type",
+    "typeColumnDescription": "Specifies the type of temporal value in the property 'temporal'. The 'temporal_type' before 2024-05-18 (2024-W20) refers to the sentinella week definition (week start Saturday, end Friday). From 2024-05-27 (2024-W22) onwards ISO week (week start Monday, end Sunday) is used. To enable the switch from sentinella week to ISO week, a 'long sentinella week' was inserted from 2024-05-18 to 2024-05-26 (2024-W21).",
+    "typeValues": ["week"]
+  },
+  "groupingVariables": {
+    "georegion": {
+      "column": "georegion",
+      "columnDescription": "Geographical unit of the data record.",
+      "typeColumn": "georegion_type",
+      "typeColumnDescription": "Specifies the type of geographical unit in the property 'georegion'.",
+      "typeValues": {
+        "country": {
+          "valueSet": "CH",
+          "allValue": "all"
+        }
+      }
+    },
+    "pathogen": {
+      "column": "pathogen",
+      "columnDescription": "Pathogen specification used for grouping.",
+      "valueSet": ["influenza", "sars-cov-2", "adenovirus", "rhinovirus", "respiratory_syncytial_virus", "other", "any"],
+      "allValue": "all"
+    },
+    "subtype": {
+      "column": "subtype",
+      "columnDescription": "Subtype specification used for grouping within the property 'type'.",
+      "valueSet": ["h3n2", "h1n1", "unknown", "victoria", "yamagata"],
+      "allValue": "all"
+    },
+    "testResult": {
+      "column": "testResult",
+      "columnDescription": "Test result used for grouping.",
+      "typeColumn": "testResult_type",
+      "typeColumnDescription": "Specifies from which type of test the property 'testResult' was derived. Abbreviations: pcr = polymerase chain reaction test; hht = hemagglutination inhibition test.",
+      "typeValues": {
+        "hht": {
+          "valueSet": "positive",
+          "allValue": "all"
+        },
+        "pcr": {
+          "valueSet": ["positive", "negative", "unknown"],
+          "allValue": "all"
+        }
+      }
+    },
+    "type": {
+      "column": "type",
+      "columnDescription": "Type specification used for grouping. Distinguishes between different influenza types (denoted in 'pathogen'), i.e., 'A' and 'B'.",
+      "valueSet": ["A", "B"],
+      "allValue": "all"
+    }
+  },
+  "valueVariables": {
+    "value": {
+      "description": "Represents the value defined by the property 'valueCategory' within the given temporal unit and grouping.",
+      "valueSetOrRange": [0, 122],
+      "nullValue": "NA",
+      "type": "integer"
+    },
+    "prctPathogen": {
+      "description": "Percentage within the given temporal unit and grouping described in the property name. Based on the property 'value'.",
+      "valueSetOrRange": [0, 65.2],
+      "nullValue": "NA",
+      "type": "double"
+    },
+    "lowerCiPathogen": {
+      "description": "Lower bound of the 95% confidence interval of the property 'prctPathogen'. The confidence intervals for respiratory pathogens in sentinella are estimated using the Wilson method for binomial confidence intervals.",
+      "valueSetOrRange": [0, 50],
+      "nullValue": "NA",
+      "type": "double"
+    },
+    "upperCiPathogen": {
+      "description": "Upper bound of the 95% confidence interval of the property 'prctPathogen'. The confidence intervals for respiratory pathogens in sentinella are estimated using the Wilson method for binomial confidence intervals.",
+      "valueSetOrRange": [3.2, 81.2],
+      "nullValue": "NA",
+      "type": "double"
+    },
+    "prctPathogenMean3w": {
+      "description": "Center-aligned, rolling 3 week average of the property 'prctPathogen' within the grouping described in the property name.",
+      "valueSetOrRange": [0, 57.3],
+      "nullValue": "NA",
+      "type": "double"
+    },
+    "prctSamples": {
+      "description": "Percentage within the given temporal unit and grouping described in the property name. Based on the property 'value'.",
+      "valueSetOrRange": [0, 90],
+      "nullValue": "NA",
+      "type": "double"
+    },
+    "prctPathogenType": {
+      "description": "Percentage within the given temporal unit and grouping described in the property name. Based on the property 'value'.",
+      "valueSetOrRange": [0, 100],
+      "nullValue": "NA",
+      "type": "double"
+    },
+    "prctPathogenSubtype": {
+      "description": "Percentage within the given temporal unit and grouping described in the property name. Based on the property 'value'.",
+      "valueSetOrRange": [0, 100],
+      "nullValue": "NA",
+      "type": "double"
+    },
+    "prctTypeSubtype": {
+      "description": "Percentage within the given temporal unit and grouping described in the property name. Based on the property 'value'.",
+      "valueSetOrRange": [0, 100],
+      "nullValue": "NA",
+      "type": "double"
+    }
+  },
+  "entryVariables": {
+    "dataComplete": {
+      "description": "Can data be assumed to be complete (few late reportings to be expected)?",
+      "valueSetOrRange": true,
+      "nullValue": "NA",
+      "type": "logical"
+    },
+    "defaultView": {
+      "description": "Indicates if an entry will be displayed on the dashboard as default or not.",
+      "valueSetOrRange": [false, true],
+      "nullValue": "NA",
+      "type": "logical"
+    }
+  }
+}
