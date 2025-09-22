@@ -53,17 +53,14 @@ estimateR_job_targets <- list(
           shedding_dist = shedding_dist,
           sensitivity_shedding = sensitivity_shedding,
           load_per_case = load_per_case,
-          sensitivity_load_per_case = sensitivity_load_per_case,
-          subsampling = subsampling
+          sensitivity_load_per_case = sensitivity_load_per_case
         )
       )
       
       if (data_handling_opts[[1]]$aggregate_data) {
-        selected_measurements <- data_PCR_agg_select |> 
-          dplyr::filter(subsampling[[1]]$subsampling_f(date))
+        selected_measurements <- data_PCR_agg_select
       } else {
-        selected_measurements <- data_PCR_select |> 
-          dplyr::filter(subsampling[[1]]$subsampling_f(date))
+        selected_measurements <- data_PCR_select
       }
         
       if (data_handling_opts[[1]]$remove_outliers) {
@@ -120,8 +117,6 @@ estimateR_job_targets <- list(
       sensitivity_incubation,
       sensitivity_shedding,
       sensitivity_load_per_case,
-      # subsampling
-      subsampling,
       # options
       fit_opts,
       data_handling_opts

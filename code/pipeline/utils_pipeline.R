@@ -1,11 +1,14 @@
+here::i_am("code/pipeline/utils_pipeline.R")
+
 library(targets)
 library(tarchetypes)
 library(crew)
 
-here::i_am("code/pipeline/utils_pipeline.R")
+library(ssh)
 
 library(data.table)
 library(dplyr)
+library(stringr)
 
 ## Setup ----
 
@@ -23,7 +26,7 @@ create_new_pipeline <- function(name) {
   setup_pipeline(paste0("_", name))
 }
 
-setup_pipeline <- function(targets_proj_name) {
+setup_pipeline <- function(targets_proj_name, invalidate = FALSE) {
   if(getwd()!=rprojroot::find_rstudio_root_file()){
     stop("Working directory must be set to project directory.")
   }
@@ -32,8 +35,23 @@ setup_pipeline <- function(targets_proj_name) {
   dir.create(file.path("pipelines", targets_proj_name, "results"), showWarnings = FALSE)
   set_project(targets_proj_name)
   set_dryrun()
-  set_run_cluster(TRUE)
-  message(paste("Pipeline", targets_proj_name, "set-up successfully."))
+  set_run_cluster()
+  
+  if (tar_exist_meta()) {
+    if (invalidate) {
+      ntargets <- nrow(tar_meta(everything()))
+      if (ntargets > 0) {
+        tar_invalidate(everything())
+        message(paste("Pipeline", targets_proj_name, "set-up successfully (invalidated", ntargets, "targets)."))
+      } else {
+        message(paste("Pipeline", targets_proj_name, "set-up successfully (invalidated 0 targets)."))
+      }
+    } else {
+      message(paste("Pipeline", targets_proj_name, "set-up successfully."))
+    }
+  } else {
+    message(paste("Pipeline", targets_proj_name, "set-up successfully (not yet run)."))
+  }
 }
 
 ## Pipeline settings ----
@@ -48,7 +66,7 @@ set_dryrun <- function(dry_run = NULL) {
   }
 }
 
-set_run_cluster <- function(run_cluster) {
+set_run_cluster <- function(run_cluster = NULL) {
   run_cluster_path <- file.path(tar_path_store(), "settings", "run_cluster.rds")
   if (is.null(run_cluster)) {
     if (!file.exists(run_cluster_path)) {
@@ -216,7 +234,8 @@ target_job_UpToDate <- function(job, job_result){
     return(
       identical(
         exclude_from_list(job[inclusion_items], exclusion_items),
-        exclude_from_list(job_result$job[inclusion_items], exclusion_items)
+        exclude_from_list(job_result$job[inclusion_items], exclusion_items),
+        ignore.environment = TRUE
       )
     ) 
   }
@@ -224,18 +243,18 @@ target_job_UpToDate <- function(job, job_result){
 
 ## Housekeeping ----
 
-prune_results <- function(approach = "EpiSewer", remove_all_jobfiles = FALSE, remove_all_outputs = FALSE) {
+prune_results <- function(approach = "EpiSewer", remove_all_jobfiles = FALSE, remove_all_outputs = FALSE, ask = TRUE) {
   
   all_results <- list.files(
-    file.path(tar_path_store(), "results"), pattern = paste0(approach, "_.+_result.rds"), full.names = TRUE
+    file.path(tar_path_store(), "results"), pattern = paste0(approach, "_.+_result.rds$"), full.names = TRUE
   )
   all_jobfiles <- list.files(
-    file.path(tar_path_store(), "results"), pattern = paste0("_.+.rds")
+    file.path(tar_path_store(), "results"), pattern = paste0("_.+.rds$")
   )
   all_jobfiles <- all_jobfiles[stringr::str_detect(all_jobfiles, "_result", negate = TRUE)]
   
   all_outputs <- list.files(
-    file.path(tar_path_store(), "results"), pattern = "_.+.out", full.names = TRUE
+    file.path(tar_path_store(), "results"), pattern = "_.+.out$", full.names = TRUE
   )
   
   current_jobs <- sapply(tar_read(job_EpiSewer), function(x) x$job$job_name)
@@ -243,24 +262,72 @@ prune_results <- function(approach = "EpiSewer", remove_all_jobfiles = FALSE, re
                                  pattern = paste0("(", paste(paste0(current_jobs, ".rds"), collapse = "|"), ")"))
   current_results <- tar_read_raw(paste0("job_", approach, "_resultpath"))
   current_resultnames <- stringr::str_remove(sapply(current_results, basename),"_\\d_result.rds")
-  current_outputs <- all_outputs[str_detect(all_outputs, pattern = paste0("(", paste(paste0(current_resultnames, ".out"), collapse = "|"), ")"))]
+  current_outputs <- all_outputs[str_detect(all_outputs, pattern = paste0("(", paste(current_resultnames, collapse = "|"), ")"))]
   
-  if (remove_all_jobfiles) {
-    jobfiles_removed <- sum(file.remove(file.path(tar_path_store(), "results", all_jobfiles)))
+  if (ask) {
+    cat("Job files to remove:\n")
+    if (remove_all_jobfiles) {
+      files_to_remove <- file.path(tar_path_store(), "results", all_jobfiles)
+      jobfiles_removed <- sum(file.exists(files_to_remove))
+    } else {
+      files_to_remove <- file.path(tar_path_store(), "results", setdiff(all_jobfiles, current_jobfiles))
+      jobfiles_removed <- sum(file.exists(files_to_remove))
+    }
+    if (length(files_to_remove)==0) {
+      print("None")
+    } else {
+      print(files_to_remove)
+    }
+    
+    cat("Results to remove:\n")
+    results_to_remove <- setdiff(all_results, current_results)
+    if (length(results_to_remove) > 0) {
+      print(results_to_remove)
+      results_removed <- sum(file.exists(results_to_remove))
+    } else {
+      print("None")
+      results_removed <- 0
+    }
+    
+    cat("Outputs to remove:\n")
+    if (remove_all_outputs) {
+      outputs_to_remove <- all_outputs
+      outputs_removed <- sum(file.exists(outputs_to_remove))
+    } else {
+      outputs_to_remove <- setdiff(all_outputs, current_outputs)
+      outputs_removed <- sum(file.exists(outputs_to_remove))
+    }
+    if (length(outputs_to_remove)==0) {
+      print("None")
+    } else {
+      print(outputs_to_remove)
+    }
+    print(paste("This operation would remove", jobfiles_removed, "job files,", results_removed, "result files and", outputs_removed, "output files."))
+    print(paste("This would leave", ifelse(remove_all_jobfiles,0,length(current_jobfiles)), "job files,",
+                length(current_results), "result files and", ifelse(remove_all_outputs,0,length(current_outputs)), "output files."))
+    response <- readline(prompt = "Do you want to proceed? (y/n): ")
   } else {
-    jobfiles_removed <- sum(file.remove(file.path(tar_path_store(), "results", setdiff(all_jobfiles, current_jobfiles))))
+    response <- "y"
   }
   
-  results_removed <- sum(file.remove(setdiff(all_results, current_results)))
-  
-  if (remove_all_outputs) {
-    outputs_removed <- sum(file.remove(all_outputs))
-  } else {
-    outputs_removed <- sum(file.remove(setdiff(all_outputs, current_outputs)))
+  if (tolower(response) == "y") {
+    if (remove_all_jobfiles) {
+      jobfiles_removed <- sum(file.remove(file.path(tar_path_store(), "results", all_jobfiles)))
+    } else {
+      jobfiles_removed <- sum(file.remove(file.path(tar_path_store(), "results", setdiff(all_jobfiles, current_jobfiles))))
+    }
+    
+    results_removed <- sum(file.remove(setdiff(all_results, current_results)))
+    
+    if (remove_all_outputs) {
+      outputs_removed <- sum(file.remove(all_outputs))
+    } else {
+      outputs_removed <- sum(file.remove(setdiff(all_outputs, current_outputs)))
+    }
+    print(paste("Removed", jobfiles_removed, "job files,", results_removed, "result files and", outputs_removed, "output files."))
+    print(paste("This leaves", ifelse(remove_all_jobfiles,0,length(current_jobfiles)), "job files,",
+                length(current_results), "result files and", ifelse(remove_all_outputs,0,length(current_outputs)), "output files."))
   }
-
-  
-  print(paste("Removed", jobfiles_removed, "job files,", results_removed, "result files and", outputs_removed, "output files."))
 }
 
 remove_job_result <- function(jobname, from_cluster = FALSE) {

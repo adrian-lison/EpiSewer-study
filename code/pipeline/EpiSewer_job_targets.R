@@ -57,7 +57,6 @@ EpiSewer_job_targets <- list(
           sensitivity_shedding = sensitivity_shedding,
           load_per_case = load_per_case,
           sensitivity_load_per_case = sensitivity_load_per_case,
-          subsampling = subsampling,
           module_measurements = names(module_measurements[1]),
           module_sampling = names(module_sampling[1]),
           module_sewage = names(module_sewage[1]),
@@ -68,11 +67,9 @@ EpiSewer_job_targets <- list(
       )
       
       if (data_handling_opts[[1]]$aggregate_data) {
-        selected_measurements <- data_PCR_agg_select |> 
-          dplyr::filter(subsampling[[1]]$subsampling_f(date))
+        selected_measurements <- data_PCR_agg_select
       } else {
-        selected_measurements <- data_PCR_select |> 
-          dplyr::filter(subsampling[[1]]$subsampling_f(date))
+        selected_measurements <- data_PCR_select
       }
       
       if (data_handling_opts[[1]]$remove_outliers) {
@@ -165,8 +162,6 @@ EpiSewer_job_targets <- list(
       sensitivity_incubation,
       sensitivity_shedding,
       sensitivity_load_per_case,
-      # subsampling
-      subsampling,
       # modules
       module_measurements,
       module_sampling,

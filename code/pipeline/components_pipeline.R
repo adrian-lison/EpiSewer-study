@@ -35,10 +35,11 @@ data_targets <- list(
         wwtp_select = wwtp_select,
         assay_select = assay_select,
         target_select = target_select,
-        date_select = date_select
+        date_select = date_select,
+        subsampling = subsampling
       )
     },
-    pattern = cross(wwtp_select, assay_select, date_select, target_select),
+    pattern = cross(wwtp_select, assay_select, date_select, target_select, subsampling),
     iteration = "list"
   ),
   data_selection_EpiSewer = tar_target(
@@ -49,7 +50,7 @@ data_targets <- list(
   ## dPCR measurements ----
   file_ww_data = tar_target(
     file_ww_data,
-    here::here("data", "ww_data", "dPCR_time_series_until_2024-07-22.csv"),
+    here::here("data", "ww_data", "dPCR_time_series_until_2025-05-31.csv"),
     format = "file"
   ),
   ww_data = tar_target(
@@ -86,10 +87,13 @@ data_targets <- list(
       wwtp == wwtp_select,
       assay == assay_select,
       target == target_select,
-      date >= date_select[[1]][["from"]], date <= date_select[[1]][["to"]]
+      date >= date_select[[1]][["from"]], date <= date_select[[1]][["to"]],
+      subsampling[[1]]$subsampling_f(date)
     )
     if (nrow(measurements) == 0) {
-      stop(paste("Selection", wwtp_select, assay_select, target_select, "has no data."))
+      warning(paste("Selection", wwtp_select, assay_select, target_select, "has no data."))
+      data.table::setDT(measurements)
+      return(measurements)
     }
     measurements <- measurements |> 
       dplyr::mutate(gc_per_mlww = gc_per_lww / 1000) |> 
@@ -110,12 +114,16 @@ data_targets <- list(
     measurements[is.na(total_droplets) & !is.na(gc_per_mlww), total_droplets := median(measurements$total_droplets, na.rm = T)]
     return(measurements)
     },
-    pattern = cross(wwtp_select, assay_select, date_select, target_select),
+    pattern = cross(wwtp_select, assay_select, date_select, target_select, subsampling),
     iteration = "list"
   ),
   data_PCR_duplicated = tar_target(
     data_PCR_duplicated,
-    duplicated(t(sapply(data_PCR_select_all, function(x) x |> slice_max(date))))
+    {
+      identifier_df <- bind_rows(lapply(data_PCR_select_all, function(x) {if(nrow(x)==0){data.frame(target=NA)}else{sl <- x |> slice_max(date) |> slice_tail()}}))
+      identifier_df$subsampling_id <- sapply(data_selection_EpiSewer_all, function(x) paste(x$subsampling[[1]]$type, x$subsampling[[1]]$subtype, sep = "_"))
+      duplicated(identifier_df) | is.na(identifier_df$target)
+    }
   ),
   data_PCR_select = tar_target(
     data_PCR_select,
@@ -130,7 +138,11 @@ data_targets <- list(
         "wwtp",
         "date"
       )
-      aggregate_replicates_mean(data_PCR_select, key_cols)
+      if (nrow(data_PCR_select)==0){
+        return(data.table())
+      } else {
+        aggregate_replicates_mean(data_PCR_select, key_cols)
+      }
     },
     pattern = map(data_PCR_select),
     iteration = "list"
@@ -161,7 +173,7 @@ data_targets <- list(
         earliest_date = date_select[[1]][["from"]],
         latest_date = date_select[[1]][["to"]] + 28
       ),
-    pattern = cross(wwtp_select, assay_select, date_select, target_select),
+    pattern = cross(wwtp_select, assay_select, date_select, target_select, subsampling),
     iteration = "list"
   ),
   data_flow_select = tar_target(

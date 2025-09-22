@@ -1,4 +1,9 @@
-create_real_time_pipelines <- function(selection_targets_name) {
+create_real_time_pipelines <- function(
+    selection_targets_name,
+    pipeline_group_name = "real_time",
+    base_targets_script_path = here::here("pipelines", "_real_time_base_targets.R"),
+    invalidate = FALSE
+    ) {
   selection_targets_path <- paste0(selection_targets_name,".R")
   source(here::here("pipelines", selection_targets_path))
   
@@ -9,6 +14,14 @@ create_real_time_pipelines <- function(selection_targets_name) {
       library(crew)
       source(here::here("pipelines", selection_targets_path_replace))
       selection_targets <- all_selection_targets[[selection_to_run_replace]]
+      # target-specific options
+      tar_option_set(
+        packages = c(
+          "dplyr", "tidyr", "readr", "EpiSewer",
+          "data.table", "stringr", "targets", "ssh"),
+        workspace_on_error = TRUE, controller = crew_controller_local(workers = 4)
+      )
+      source(base_targets_script_path_replace)
       source(here::here("pipelines", "_real_time.R"))
     }
     )
@@ -17,13 +30,16 @@ create_real_time_pipelines <- function(selection_targets_name) {
       substitute, 
       list(code_to_run, list(
         selection_to_run_replace = selection_to_run,
-        selection_targets_path_replace = selection_targets_path
+        selection_targets_path_replace = selection_targets_path,
+        base_targets_script_path_replace = base_targets_script_path
       ))
     )
     
-    tar_helper_raw(path = here::here("pipelines", paste0("_real_time_", selection_to_run, ".R")), code = code_to_run)
+    pipeline_full_name <- paste0("_", pipeline_group_name, "_", selection_to_run)
     
-    setup_pipeline(paste0("_real_time_", selection_to_run))
+    tar_helper_raw(path = here::here("pipelines", paste0(pipeline_full_name,".R")), code = code_to_run)
+    
+    setup_pipeline(pipeline_full_name, invalidate = invalidate)
   }
 }
 
@@ -112,6 +128,10 @@ get_R_median_real_time_list <- function(results_select_list, baseline_select_lis
 
   R_real_time_list <-  mapply(function(baseline_select, results_select) {
     rbindlist(lapply(job_EpiSewer_result[results_select$i], function(x) {
+      if (is.null(x$summary)) {
+        warning(paste("Empty summary in", x$job$selection$wwtp, x$job$selection$target))
+        return(data.table())
+      }
       
       baseline_median <- job_EpiSewer_result[[baseline_select$i]]$summary$R[
         seeding == FALSE, .SD, .SDcols = c( "date", "median")
@@ -146,12 +166,48 @@ get_R_median_real_time_list <- function(results_select_list, baseline_select_lis
   return(R_real_time_list)
 }
 
+get_R_median_error_real_time_list <- function(results_select_list, baseline_select_list) {
+  
+  R_real_time_list <-  mapply(function(baseline_select, results_select) {
+    rbindlist(lapply(job_EpiSewer_result[results_select$i], function(x) {
+      if (is.null(x$summary)) {
+        warning(paste("Empty summary in", x$job$selection$wwtp, x$job$selection$target))
+        return(data.table())
+      }
+      
+      baseline_median <- job_EpiSewer_result[[baseline_select$i]]$summary$R[
+        seeding == FALSE, .SD, .SDcols = c( "date", "median")
+      ]
+      setnames(baseline_median, "median", "median_retrospective")
+      
+      estimation_date = x$summary$R[type == "estimate", max(date)]
+      
+      real_time_median <- merge(x$summary$R[
+        seeding == FALSE, .SD, .SDcols = patterns("(date|median)")
+      ], baseline_median, by = "date")
+      
+      real_time_median[, estimation_date := estimation_date]
+      real_time_median[, h := date - estimation_date]
+      real_time_median[, median_error := median - median_retrospective]
+      real_time_median[, median := NULL]
+      real_time_median[, median_retrospective := NULL]
+      return(real_time_median)
+    }))}, baseline_select = baseline_select_list, results_select = results_select_list, SIMPLIFY = FALSE)
+  
+  return(R_real_time_list)
+}
+
 get_forecasts_list <- function(results_select_list, baseline_select_list, ground_truth_list) {
   lapply(1:length(results_select_list), function(i) {
     results_select <- results_select_list[[i]]
     baseline_select <- baseline_select_list[[i]]
     ground_truth <- ground_truth_list[[i]]
     all_forecasts <- rbindlist(lapply(job_EpiSewer_result[results_select$i], function(res) {
+      if (is.null(res$summary)) {
+        warning(paste("Empty summary in", res$job$selection$wwtp, res$job$selection$target))
+        return(data.table())
+      }
+      
       estimation_date = res$summary$normalized_concentration[type == "estimate", max(date)]
       
       conc_forecast <- res$summary$normalized_concentration[type == "forecast"]
