@@ -36,16 +36,18 @@ The repository is structured as follows:
 ### Setup
 The analysis scripts are written as R notebooks and are ideally run in an Rstudio
 project. When opening the project, run `renv::restore()` to install all required
-R packages (requires the `renv` package).
+R packages (requires the `renv` package). The `renv.lock` file records all software packages and version used.
 
 Note that this study used a [development version of EpiSewer](https://github.com/adrian-lison/EpiSewer/tree/develop). To ensure
 reproducibility, `renv` will automatically install this version of the package.
-The current stable version of the package can be installed from the [main branch of EpiSewer](https://github.com/adrian-lison/EpiSewer).
+The current stable version of the package can be installed from the [main branch of EpiSewer](https://github.com/adrian-lison/EpiSewer). Please consult the [package README](https://github.com/adrian-lison/EpiSewer/blob/main/README.md) for instructions on how to install EpiSewer independently. It also contains a simple demo example that shows how to parameterize and fit the model.
 
 ### Re-running of pipelines
 To rerun the model fitting, you must first install the stan inference 
 engine, see [the cmdstanr vignette](https://mc-stan.org/cmdstanr/articles/cmdstanr.html)
-for help.
+for help. After that, the stan model needs to be compiled by running `EpiSewer::sewer_compile()`.
+The compilation process can take up to 5 minutes, but only needs to be run before first usage.
+
 In particular for the real-time study, rerunning all models will 
 require significant computational resources, ideally a high-performance cluster. 
 The provided `targets` pipeline supports parallelization via the crew package.
