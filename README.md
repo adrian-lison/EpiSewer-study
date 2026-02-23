@@ -16,7 +16,7 @@ Tanja Stadler (1,2)
 (6) University of Basel, 4055 Basel, Switzerland
 
 ## Contents of this repository
-*Code version: v1.1.0*
+*Code version: v1.1.1*
 
 This repository contains the code, data, and analysis scripts of the
 study "Robust real-time estimation of pathogen transmission dynamics from wastewater".
