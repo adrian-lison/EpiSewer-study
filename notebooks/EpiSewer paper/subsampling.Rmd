@@ -146,6 +146,12 @@ cowplot::plot_grid(
 ggsave(here::here("figures", "subsampling", "subsampling_MAE_and_width.pdf"), width = 10, height = 5, scale = 0.9)
 ```
 
+```{r}
+# get minimum and maximum error by subsampling type
+error_plot_data |> group_by(subsampling_type) |> summarise(MAE_min = round(min(MAE),2), MAE_max = round(max(MAE),2))
+```
+
+
 ## Example Rt estimates over time
 ```{r}
 target_R_lim <- list(

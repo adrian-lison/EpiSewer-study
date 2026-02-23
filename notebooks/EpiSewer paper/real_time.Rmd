@@ -38,6 +38,7 @@ for (selection_to_run in all_pipelines) {
   }
 }
 ```
+
 ```{r}
 create_real_time_pipelines("_real_time_selection_targets_23-24") 
 all_pipelines <- paste0("_real_time_", names(all_selection_targets))
@@ -66,7 +67,10 @@ for (selection_to_run in all_pipelines) {
 
 Check all results
 ```{r}
-all_pipelines <- purrr::list_c(lapply(c("_real_time_selection_targets_22-23","_real_time_selection_targets_23-24","_real_time_selection_targets_24-25"), function(x) {
+all_pipelines <- purrr::list_c(lapply(c(
+  "_real_time_selection_targets_22-23",
+  "_real_time_selection_targets_23-24",
+  "_real_time_selection_targets_24-25"), function(x) {
   source(paste0("pipelines/", x, ".R"))
   paste0("_real_time_", names(all_selection_targets))
 }))
@@ -85,7 +89,10 @@ rbindlist(lapply(all_pipelines, function(pipeline) {
 
 ## Load results
 ```{r}
-all_pipelines <- purrr::list_c(lapply(c("_real_time_selection_targets_22-23","_real_time_selection_targets_23-24","_real_time_selection_targets_24-25"), function(x) {
+all_pipelines <- purrr::list_c(lapply(c(
+  "_real_time_selection_targets_22-23",
+  "_real_time_selection_targets_23-24",
+  "_real_time_selection_targets_24-25"), function(x) {
   source(paste0("pipelines/", x, ".R"))
   paste0("_real_time_", names(all_selection_targets))
 }))
@@ -415,8 +422,7 @@ metrics_list <- list(
   "dispersion" = dispersion_quantile,
   "bias" = bias_quantile,
   "interval_coverage_50" = purrr::partial(interval_coverage, interval_range = 50),
-  "interval_coverage_90" = purrr::partial(interval_coverage, interval_range = 90),
-  "interval_coverage_deviation" = interval_coverage_deviation
+  "interval_coverage_90" = purrr::partial(interval_coverage, interval_range = 90)
 )
 conc_score_list <- lapply(all_forecasts_list, function(all_forecasts) score(all_forecasts, metrics = metrics_list))
 baseline_score_list <- lapply(all_baseline_list, function(all_baseline) score(all_baseline, metrics = metrics_list))
@@ -658,8 +664,13 @@ combined_fig
 total_draws <- 4*2500 # four chains with 2500 sampling iterations each
 
 diagnostics_index <- cbind(results_index, rbindlist(lapply(job_EpiSewer_result, function(res){
+  if (!"metainfo" %in% names(res$job)) {
+    return(data.frame(n_chains = 4))
+  }
   n_chains <- res$job$fit_opts$sampler$chains
+  time_window <- with(res$job$metainfo, T_end_date - T_start_date)
   runtime <- ifelse("total" %in% names(res$runtime), res$runtime$total, NA)
+  avg_runtime <- ifelse("chains" %in% names(res$runtime), mean(res$runtime$chains$total), NA)
   num_divergent <- ifelse("num_divergent" %in% names(res$diagnostics), sum(res$diagnostics$num_divergent), NA)
   num_divergent_max <- ifelse("num_divergent" %in% names(res$diagnostics), max(res$diagnostics$num_divergent), NA)
   min_ebfmi <- ifelse("ebfmi" %in% names(res$diagnostics), min(res$diagnostics$ebfmi), NA)
@@ -680,7 +691,9 @@ diagnostics_index <- cbind(results_index, rbindlist(lapply(job_EpiSewer_result, 
     share_ess_tail <- NA
   }
   data.frame(
+    time_window = time_window,
     runtime = runtime,
+    avg_runtime = avg_runtime,
     num_divergent = num_divergent,
     num_divergent_max = num_divergent_max,
     min_ebfmi = min_ebfmi,
@@ -692,7 +705,7 @@ diagnostics_index <- cbind(results_index, rbindlist(lapply(job_EpiSewer_result, 
     share_ess_bulk = share_ess_bulk,
     share_ess_tail = share_ess_tail
     )
-})))
+}), fill = TRUE))
 diagnostics_index <- diagnostics_index |> mutate(
   target = factor(target, levels = c("SARS-N2", "IAV-M", "RSV-N"), labels = c("SARS-CoV-2", "IAV", "RSV"), ordered = T),
   wwtp = factor(wwtp, levels = wwtps_select, labels = names(wwtps_select), ordered = T)
@@ -735,15 +748,15 @@ diagnostics_theme_bp(
     scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
     geom_boxplot() +
    ylab("Divergent transitions") +
-   coord_cartesian(ylim = c(0, 0.5))
+   coord_cartesian(ylim = c(0, 0.15))
 )
 
 diagnostics_theme_ts(
   diagnostics_index |> filter(!is.na(target)) |> 
     ggplot(aes(x = estimation_date, y = num_divergent/total_draws, color = target)) +
-    scale_y_continuous(labels = scales::percent_format(accuracy = 1), breaks = seq(0,0.6,0.2)) +
+    scale_y_continuous(labels = scales::percent_format(accuracy = 1), breaks = seq(0,0.6,0.05)) +
     ylab("Divergent transitions") + 
-    coord_cartesian(ylim = c(0, 0.5))
+    coord_cartesian(ylim = c(0, 0.15))
   )
 
 ggsave(here::here("figures", "real_time", "diagnostics_divergent_transitions.pdf"), width = 10, height = 5)

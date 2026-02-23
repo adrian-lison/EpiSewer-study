@@ -71,7 +71,7 @@ option_targets$results_opts_target <- tar_target(
   list(
     set_results_opts(
       fitted = FALSE,
-      summary_intervals = c(0.5, 0.95),
+      summary_intervals = c(0.5, 0.8, 0.95),
       samples_ndraws = 1000
     )
   )

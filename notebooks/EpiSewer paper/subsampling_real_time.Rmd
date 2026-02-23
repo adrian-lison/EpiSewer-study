@@ -38,7 +38,7 @@ all_pipelines <- paste0("_real_time_subsampling_", names(all_selection_targets))
 print(paste("Running", length(names(all_selection_targets)), "pipelines"))
 
 for (selection_to_run in all_pipelines) {
-  run_pipeline(targets_proj_name = selection_to_run, submit = F, run_cluster = T)
+  run_pipeline(targets_proj_name = selection_to_run, submit = TRUE)
   if(length(tar_read(jobs_EpiSewer_invalid))>0) {
     warning("There are invalid jobs.")
   }
@@ -264,8 +264,7 @@ metrics_list <- list(
   "dispersion" = dispersion_quantile,
   "bias" = bias_quantile,
   "interval_coverage_50" = purrr::partial(interval_coverage, interval_range = 50),
-  "interval_coverage_90" = purrr::partial(interval_coverage, interval_range = 90),
-  "interval_coverage_deviation" = interval_coverage_deviation
+  "interval_coverage_90" = purrr::partial(interval_coverage, interval_range = 90)
 )
 conc_score_list <- lapply(all_forecasts_list, function(all_forecasts) score(all_forecasts, metrics = metrics_list))
 baseline_score_list <- lapply(all_baseline_list, function(all_baseline) score(all_baseline, metrics = metrics_list))
