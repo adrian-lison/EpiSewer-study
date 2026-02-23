@@ -293,6 +293,8 @@ R_coverage_week[
   , wwtp := factor(wwtp, levels = wwtps_select, labels = names(wwtps_select), ordered = T)
   ]
 
+write.csv(R_coverage_week, here::here("data", "results", "EpiSewer paper", paste0("R_real_time_coverage_", stringr::str_replace(season_select,"/","-"),".csv")), row.names = FALSE)
+
 consistency_plot <- R_coverage_week |> 
   ggplot(aes(x=h_week)) +
   geom_vline(xintercept = 0, linetype = "solid", color = "grey") +
@@ -359,6 +361,8 @@ R_median_error_week[
   ][
   , wwtp := factor(wwtp, levels = wwtps_select, labels = names(wwtps_select), ordered = T)
   ]
+
+write.csv(R_median_error_week, here::here("data", "results", "EpiSewer paper", paste0("R_real_time_median_error_", stringr::str_replace(season_select,"/","-"),".csv")), row.names = FALSE)
 
 median_error_plot <- R_median_error_week |> 
   ggplot(aes(x=h_week)) +
@@ -456,6 +460,8 @@ bias_plot_data[, target := factor(target)]
 bias_plot_data[, infection_trend_type := factor(infection_trend_type)]
 bias_plot_data[, nudge_y := -(as.numeric(infection_trend_type)+2*(as.numeric(target)-1)-(6/2+0.5))*0.15]
 
+write.csv(bias_plot_data, here::here("data", "results", "EpiSewer paper", paste0("forecast_bias_", stringr::str_replace(season_select,"/","-"),".csv")), row.names = FALSE)
+
 bias_plot <- bias_plot_data |> 
   ggplot(aes(x=bias, y=wwtp)) +
   geom_vline(xintercept = 0, linetype = "dashed") + 
@@ -500,6 +506,8 @@ coverage_data <- rbindlist(lapply(1:length(all_forecasts_list), function(i) {
   ], by = c("wwtp", "target")
   ), error = function(e) return(data.table()))}
 ))
+
+write.csv(coverage_data, here::here("data", "results", "EpiSewer paper", paste0("forecast_coverage_", stringr::str_replace(season_select,"/","-"),".csv")), row.names = FALSE)
 
 coverage_plot <- ggplot(coverage_data, aes(x = interval_range, y = interval_coverage*100, color = target)) +
   geom_polygon(data = data.frame(x = c(0, 0, 100), y = c(0, 100, 100), g = c("o", "o", "o"), stringsAsFactors = TRUE),
@@ -657,6 +665,111 @@ combined_fig
   
   ggsave(combined_fig, filename = here::here("figures", "real_time", paste0("combined_performance_all_",stringr::str_replace(season_select,"/","-"),".pdf")), width = 10, height = 6, scale = 0.9)
 }
+```
+
+## All real-time results as tables
+```{r}
+library(kableExtra)
+wwtps_select <- c("Zurich" = "ARA Werdhoelzli", "Lugano" = "CDA Lugano", "Chur" = "ARA Chur")
+```
+
+
+```{r}
+R_consistency_week_all <- bind_rows(lapply(c("2022/23", "2023/24", "2024/25"), function(season) {
+  coverage <- readr::read_csv(here::here("data", "results", "EpiSewer paper", paste0("R_real_time_coverage_", stringr::str_replace(season,"/","-"),".csv")), show_col_types = FALSE )
+  median_error <- readr::read_csv(here::here("data", "results", "EpiSewer paper", paste0("R_real_time_median_error_", stringr::str_replace(season_select,"/","-"),".csv")), show_col_types = FALSE)
+  full_join(coverage, median_error, by = c("wwtp", "target", "h_week")) |> 
+    mutate(season = season)
+})) |> 
+  mutate(
+    target = factor(target, levels = c("SARS-CoV-2", "IAV", "RSV"), ordered = T)
+  )
+
+R_consistency_table <- R_consistency_week_all |> 
+  mutate(wwtp = factor(wwtp, levels = c(names(wwtps_select), "all"), ordered = T)) |> 
+  filter(h_week >= 0, h_week <= 4) |>
+  arrange(target, season, h_week, wwtp) |> 
+  mutate(coverage = scales::percent(coverage, accuracy = 1), MAE = round(MAE, 2))
+
+R_consistency_table_wide <- R_consistency_table |>
+  select(Pathogen = target,
+         Season = season,
+         Lag = h_week,
+         Location = wwtp,
+         Coverage = coverage,
+         MAE) |>
+  tidyr::pivot_wider(
+    names_from = Lag,
+    values_from = c(Coverage, MAE),
+    names_glue = "{.value}_{Lag}"
+  ) |>
+  arrange(Pathogen, Season, Location)
+
+colnames(R_consistency_table_wide) <- c(
+  "Pathogen", "Season", "Location",
+  paste0("0",""), paste0("1",""), paste0("2",""), paste0("3",""), paste0("4",""),
+  paste0("0",""), paste0("1",""), paste0("2",""), paste0("3",""), paste0("4","")
+)
+
+# export as latex table
+R_consistency_table_latex <- R_consistency_table_wide |>
+  knitr::kable(
+    format = "latex",
+    booktabs = TRUE,
+    longtable = TRUE,
+    align = paste0("lll", paste(rep("c", 10), collapse = "")),
+    caption = "Real-time consistency of $R_t$ estimates across pathogens, seasons and locations."
+  ) |>
+  add_header_above(
+    c(" " = 3,
+      "Coverage (0-4 weeks lag)" = 5,
+      "MAE (0-4 weeks lag)" = 5)
+  ) |> 
+  collapse_rows(columns = 1:2, valign = "top")
+```
+
+```{r}
+forecast_bias_all <- bind_rows(lapply(c("2022/23", "2023/24", "2024/25"), function(season) {
+  readr::read_csv(
+  here::here("data", "results", "EpiSewer paper", paste0("forecast_bias_", stringr::str_replace(season,"/","-"),".csv")),
+  show_col_types = FALSE) |> 
+  mutate(
+    target = factor(target, levels = c("SARS-CoV-2", "IAV", "RSV"), ordered = T),
+    wwtp = factor(wwtp, levels = names(wwtps_select), ordered = T),
+    infection_trend_type = factor(infection_trend_type, levels = c("increasing", "decreasing")),
+    season = season
+  )
+}))
+
+forecast_bias_table_wide <- forecast_bias_all |>
+  mutate(
+    infection_trend_type = paste("Infections", infection_trend_type),
+    bias = scales::percent(bias, accuracy = 0.1)
+    ) |> 
+  select(Pathogen = target,
+         Season = season,
+         Location = wwtp,
+         infection_trend_type,
+         bias) |>
+  tidyr::pivot_wider(
+    names_from = infection_trend_type,
+    values_from = bias#, names_glue = "{.value}"
+  ) |>
+  arrange(Pathogen, Season, Location)
+
+forecast_bias_table_latex <- forecast_bias_table_wide |>
+  knitr::kable(
+    format = "latex",
+    booktabs = TRUE,
+    longtable = TRUE,
+    align = paste0("lll", paste(rep("c", 2), collapse = "")),
+    caption = "Bias of concentration forecasts across pathogens, seasons, and locations."
+  ) |>
+  add_header_above(
+    c(" " = 3,
+      "Bias" = 2)
+  ) |> 
+  collapse_rows(columns = 1:2, valign = "top")
 ```
 
 ## Diagnostics
