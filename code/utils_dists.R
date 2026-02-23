@@ -237,6 +237,27 @@ rgamma2 <- function(n, mean, cv) {
   return(rgamma(n = n, shape = shape, rate = rate))
 }
 
+dgamma2 <- function(x, mean, cv) {
+  sd = cv * mean
+  shape = get_gamma_shape_alternative(mean, sd)
+  rate = get_gamma_rate_alternative(mean, sd)
+  return(dgamma(x = x, shape = shape, rate = rate))
+}
+
+pgamma2 <- function(q, mean, cv) {
+  sd = cv * mean
+  shape = get_gamma_shape_alternative(mean, sd)
+  rate = get_gamma_rate_alternative(mean, sd)
+  return(pgamma(q = q, shape = shape, rate = rate))
+}
+
+qgamma2 <- function(p, mean, cv) {
+  sd = cv * mean
+  shape = get_gamma_shape_alternative(mean, sd)
+  rate = get_gamma_rate_alternative(mean, sd)
+  return(qgamma(p = p, shape = shape, rate = rate))
+}
+
 # Log-Normal ----
 
 #' Compute mu parameter of Log-Normal from other quantities.
@@ -406,6 +427,18 @@ rlnorm3 <- function(n, mean, cv) {
   sigma2 = log(1 + cv^2);
   mu = log(mean) - sigma2/2;
   return(rlnorm(n, meanlog = mu, sd = sqrt(sigma2)))
+}
+
+dlnorm3 <- function(x, mean, cv) {
+  sigma2 = log(1 + cv^2);
+  mu = log(mean) - sigma2/2;
+  return(dlnorm(x, meanlog = mu, sd = sqrt(sigma2)))
+}
+
+plnorm3 <- function(q, mean, cv) {
+  sigma2 = log(1 + cv^2);
+  mu = log(mean) - sigma2/2;
+  return(plnorm(q, meanlog = mu, sd = sqrt(sigma2)))
 }
 
 # Approximation for MGF of the Log-Normal distribution by Assmussen et al. 
