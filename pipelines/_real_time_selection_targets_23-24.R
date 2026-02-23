@@ -30,9 +30,9 @@ all_selection_targets[["SARSCoV_23-24_ARA_Werdhoelzli"]] <- list(
   tar_target(
     date_select,
     {
-      from = as.Date("2023-08-28")
+      from = as.Date("2023-08-14")
       to = c(
-        seq.Date(as.Date("2023-09-25"), as.Date("2024-04-29"), by="1 day"),
+        seq.Date(as.Date("2023-09-11"), as.Date("2024-04-29"), by="1 day"),
         as.Date("2024-08-01")
       )
       mapply(
@@ -88,7 +88,7 @@ all_selection_targets[["SARSCoV_23-24_ARA_Chur"]] <- list(
     {
       from = as.Date("2023-08-21")
       to = c(
-        seq.Date(as.Date("2023-09-18"), as.Date("2024-04-08"), by="1 day"),
+        seq.Date(as.Date("2023-09-18"), as.Date("2024-04-01"), by="1 day"),
         as.Date("2024-08-01")
       )
       mapply(
