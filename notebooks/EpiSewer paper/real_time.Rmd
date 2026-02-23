@@ -852,6 +852,59 @@ diagnostics_theme_bp <- function(p) {
 }
 ```
 
+#### Runtime statistics
+
+```{r}
+diagnostics_index |> 
+  filter(!is.na(target)) |> 
+  mutate(time_window_weeks = 4 * (1 + (as.numeric(time_window) %/% (7*4)))) |>
+  filter(time_window_weeks <= 4*10) |>
+  ggplot(aes(x = as.factor(time_window_weeks), y = avg_runtime / 60, color = target)) +
+  geom_boxplot() +
+  ylab("Per-chain runtime [min]") +
+  xlab("Length of time window [weeks]") +
+  scale_x_discrete(labels = function(x) paste0(as.numeric(x)-3, "-", x)) +
+  scale_color_manual(name = "Pathogen", values = palette_targets) +
+  theme_bw() +
+  theme(
+    legend.position = "top"
+    ) +
+  ylim(c(0,300))
+
+ggsave(here::here("figures", "real_time", "diagnostics_runtime.pdf"), width = 10, height = 5)
+```
+
+```{r}
+# estimate slope of runtime~time_window for each combination of target and wwtp
+runtime_slopes <- diagnostics_index |>
+  filter(!is.na(target)) |>
+  group_by(target) |>
+  mutate(time_window_weeks = as.numeric(time_window) / 7, avg_runtime_min = avg_runtime/60) |>
+  summarize(
+    slope = coef(lm(avg_runtime_min ~ time_window_weeks))[2],
+    p_value = summary(lm(avg_runtime_min ~ time_window_weeks))$coefficients[2,4],
+    .groups = "drop")
+
+runtime_slopes
+
+mean(runtime_slopes$slope)
+```
+
+
+```{r}
+# 1 month
+  diagnostics_index |> 
+  filter(!is.na(target)) |> 
+  filter(time_window > 4 * 7 - 3, time_window < 4 * 7 + 3) |> 
+  summarize(avg_runtime_mins = mean(avg_runtime, na.rm = T)/60)
+
+# 6 months
+  diagnostics_index |> 
+  filter(!is.na(target)) |> 
+  filter(time_window > 26 * 7 - 3, time_window < 26 * 7 + 3) |> 
+  summarize(avg_runtime_mins = mean(avg_runtime, na.rm = T)/60)
+```
+
 
 #### Divergent transitions
 ```{r}
