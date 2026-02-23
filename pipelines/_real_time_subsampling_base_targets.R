@@ -69,13 +69,16 @@ modeling_targets <- list(
           concentration_col = "gc_per_mlww",
           n_averaged_col = "n_reps"
         ),
-        noise = noise_estimate_dPCR(
-          total_partitions_prior_mu = 20000,
-          total_partitions_prior_sigma = 5000,
-          partition_variation_prior_mu = 0,
-          partition_variation_prior_sigma = 0.05,
-          volume_scaled_prior_mu = 1.73e-5,
-          volume_scaled_prior_sigma = 0.05e-5,
+        noise = noise_estimate_dPCR_params(
+          max_partitions_prior_lower = 20000,
+          max_partitions_prior_upper = 40000,
+          partition_loss_mean_prior_lower = 0.05,
+          partition_loss_mean_prior_upper = 0.3,
+          partition_loss_variation_prior_lower = 0.5,
+          partition_loss_variation_prior_upper = 2,
+          partition_loss_max = 0.5,
+          volume_scaled_prior_lower = 1e-6,
+          volume_scaled_prior_upper = 1e-4,
           prePCR_noise_type = "log-normal"
         ),
         LOD = LOD_estimate_dPCR()
@@ -125,13 +128,13 @@ modeling_targets <- list(
           R = R_estimate_gp(
             length_scale_prior_mu = 7*3,
             length_scale_prior_sigma = 7/2,
-            magnitude_prior_mu = 0.2,
-            magnitude_prior_sigma = 0.05,
+            magnitude_prior_mu = 0.125,
+            magnitude_prior_sigma = 0.025,
             long_length_scale_prior_mu = 7*4*3,
             long_length_scale_prior_sigma = 7,
-            long_magnitude_prior_mu = 0.4,
-            long_magnitude_prior_sigma = 0.1,
-            matern_nu = 3/2,
+            long_magnitude_prior_mu = 0.25,
+            long_magnitude_prior_sigma = 0.05,
+            matern_nu = 3/2
           ),
           seeding = seeding_estimate_growth(),
           infection_noise =  infection_noise_estimate(

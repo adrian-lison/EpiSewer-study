@@ -105,13 +105,13 @@ modeling_targets$infections_target = tar_target(
         R = R_estimate_gp(
           length_scale_prior_mu = 7*3,
           length_scale_prior_sigma = 7/2,
-          magnitude_prior_mu = 0.2,
-          magnitude_prior_sigma = 0.05,
+          magnitude_prior_mu = 0.125,
+          magnitude_prior_sigma = 0.025,
           long_length_scale_prior_mu = 7*4*3,
           long_length_scale_prior_sigma = 7,
-          long_magnitude_prior_mu = 0.4,
-          long_magnitude_prior_sigma = 0.1,
-          matern_nu = 3/2,
+          long_magnitude_prior_mu = 0.25,
+          long_magnitude_prior_sigma = 0.05,
+          matern_nu = 3/2
         ),
         seeding = seeding_estimate_growth(extend = FALSE),
         infection_noise =  infection_noise_estimate(
