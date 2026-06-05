@@ -1,4 +1,4 @@
-# Robust real-time estimation of pathogen transmission dynamics from wastewater
+# Real-time estimation of pathogen transmission dynamics from wastewater
 
 Adrian Lison (1,2), 
 Rachel E. McLeod (3), 
@@ -19,7 +19,7 @@ Tanja Stadler (1,2)
 *Code version: v1.1.1*
 
 This repository contains the code, data, and analysis scripts of the
-study "Robust real-time estimation of pathogen transmission dynamics from wastewater".
+study "Real-time estimation of pathogen transmission dynamics from wastewater".
 The code can be used to reproduce the results and figures in the paper.
 
 The repository is structured as follows:
